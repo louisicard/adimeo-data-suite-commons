@@ -1,0 +1,10 @@
+{
+	"name": "adimeo-data-suite/commons",
+  "type": "symfony-bundle",
+  "autoload": {
+    "psr-4": { "AdimeoDataSuite\\Bundle\\CommonsBundle\\": "" }
+  },
+  "require": {
+      "symfony/framework-bundle": "*"
+  }
+}
