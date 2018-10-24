@@ -1,0 +1,5 @@
+services:
+  adimeo_data_suite_es_server:
+    class: AdimeoDataSuite\Bundle\CommonsBundle\Index\IndexManager
+    arguments: ["%env(ELASTICSEARCH_SERVER_URL)%"]
+    public: true

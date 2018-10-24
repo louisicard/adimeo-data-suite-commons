@@ -5,6 +5,7 @@
     "psr-4": { "AdimeoDataSuite\\Bundle\\CommonsBundle\\": "" }
   },
   "require": {
-      "symfony/framework-bundle": "*"
+    "symfony/framework-bundle": "*",
+    "elasticsearch/elasticsearch": "5.x"
   }
 }
