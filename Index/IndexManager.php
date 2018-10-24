@@ -3,7 +3,7 @@
 namespace AdimeoDataSuite\Bundle\CommonsBundle\Index;
 
 use AdimeoDataSuite\Bundle\CommonsBundle\Model\PersistentObject;
-use AdimeoDataSuite\Bundle\SecurityBundle\Security\User;
+use AdimeoDataSuite\Bundle\ADSSecurityBundle\Security\User;
 use Elasticsearch\Client;
 use Elasticsearch\ClientBuilder;
 use Symfony\Component\Security\Core\Encoder\PasswordEncoderInterface;
