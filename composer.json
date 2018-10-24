@@ -6,6 +6,14 @@
   },
   "require": {
     "symfony/framework-bundle": "*",
-    "elasticsearch/elasticsearch": "5.x"
-  }
+    "symfony/security": "*",
+    "elasticsearch/elasticsearch": "5.x",
+    "adimeo-data-suite/security": "dev-master"
+  },
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/louisicard/adimeo-data-suite-security"
+    }
+  ]
 }
