@@ -59,18 +59,83 @@ class IndexManager
     return $indices;
   }
 
+  function getIndicesInfo($checkACL = true)
+  {
+    $info = array();
+    $stats = $this->client->indices()->stats();
+    //TODO: Check access rights
+//    if($checkACL) {
+//      $allowed_indexes = $this->getCurrentUserAllowedIndexes();
+//    }
+    foreach ($stats['indices'] as $index_name => $stat) {
+//      if(!$checkACL || $this->isCurrentUserAdmin() || in_array($index_name, $allowed_indexes)) {
+      $info[$index_name] = array(
+        'count' => $stat['total']['docs']['count'] - $stat['total']['docs']['deleted'],
+        'size' => round($stat['total']['store']['size_in_bytes'] / 1024 / 1024, 2) . ' MB',
+      );
+      $mappings = $this->client->indices()->getMapping(array('index' => $index_name));
+      foreach ($mappings[$index_name]['mappings'] as $mapping => $properties) {
+        $info[$index_name]['mappings'][] = array(
+          'name' => $mapping,
+          'field_count' => count($properties['properties']),
+        );
+//        }
+      }
+    }
+    unset($stats);
+    return $info;
+  }
+
   public function getIndex($indexName) {
     return $this->client->indices()->getSettings(array('index' => $indexName));
   }
 
   public function createIndex($indexName, $settings) {
+    if (isset($settings['creation_date']))
+      unset($settings['creation_date']);
+    if (isset($settings['version']))
+      unset($settings['version']);
+    if (isset($settings['uuid']))
+      unset($settings['uuid']);
+    if (isset($settings['provided_name']))
+      unset($settings['provided_name']);
     $params = array(
       'index' => $indexName,
-      'body' => array(
-        'settings' => $settings,
-      )
     );
+    $settings['analysis']['analyzer']['transliterator'] = array(
+      'filter' => array('standard', 'asciifolding', 'lowercase'),
+      'tokenizer' => 'keyword'
+    );
+    if (count($settings) > 0) {
+      $params['body'] = array(
+        'settings' => $settings,
+      );
+    }
     return $this->client->indices()->create($params);
+  }
+
+  function updateIndex($indexName, $settings)
+  {
+    if (isset($settings['creation_date']))
+      unset($settings['creation_date']);
+    if (isset($settings['version']))
+      unset($settings['version']);
+    if (isset($settings['uuid']))
+      unset($settings['uuid']);
+    if (isset($settings['number_of_shards']))
+      unset($settings['number_of_shards']);
+    if (isset($settings['analysis']))
+      unset($settings['analysis']);
+    if (isset($settings['provided_name']))
+      unset($settings['provided_name']);
+    if (count($settings) > 0) {
+      $this->client->indices()->putSettings(array(
+        'index' => $indexName,
+        'body' => array(
+          'settings' => $settings,
+        ),
+      ));
+    }
   }
 
   public function deleteIndex($indexName) {
@@ -80,11 +145,76 @@ class IndexManager
     return $this->client->indices()->delete($params);
   }
 
-  public function createMapping($indexName, $mappingName, $mapping) {
+  /**
+   *
+   * @param string $indexName
+   * @return string[]
+   */
+  function getAnalyzers($indexName)
+  {
+    $analyzers = array('standard', 'simple', 'whitespace', 'stop', 'keyword', 'pattern', 'language', 'snowball');
+    $settings = $this->client->indices()->getSettings(array(
+      'index' => $indexName,
+    ));
+    if (isset($settings[$indexName]['settings']['index']['analysis']['analyzer'])) {
+      foreach ($settings[$indexName]['settings']['index']['analysis']['analyzer'] as $analyzer => $definition) {
+        $analyzers[] = $analyzer;
+      }
+    }
+    unset($settings);
+    return $analyzers;
+  }
+
+  /**
+   *
+   * @return string[]
+   */
+  function getFieldTypes()
+  {
+    $types = array('integer', 'long', 'float', 'double', 'boolean', 'date', 'ip', 'geo_point');
+    if($this->getServerMajorVersionNumber() >= 5){
+      $types = array_merge($types, array('text', 'keyword'));
+    }
+    else{
+      $types = array_merge($types, array('string'));
+    }
+    asort($types);
+    return $types;
+  }
+
+  /**
+   *
+   * @return string[]
+   */
+  function getDateFormats()
+  {
+    return array('basic_date', 'basic_date_time', 'basic_date_time_no_millis', 'basic_ordinal_date', 'basic_ordinal_date_time', 'basic_ordinal_date_time_no_millis', 'basic_time', 'basic_time_no_millis', 'basic_t_time', 'basic_t_time_no_millis', 'basic_week_date', 'basic_week_date_time', 'basic_week_date_time_no_millis', 'date', 'date_hour', 'date_hour_minute', 'date_hour_minute_second', 'date_hour_minute_second_fraction', 'date_hour_minute_second_millis', 'date_optional_time', 'date_time', 'date_time_no_millis', 'hour', 'hour_minute', 'hour_minute_second', 'hour_minute_second_fraction', 'hour_minute_second_millis', 'ordinal_date', 'ordinal_date_time', 'ordinal_date_time_no_millis', 'time', 'time_no_millis', 't_time', 't_time_no_millis', 'week_date', 'week_date_time', 'weekDateTimeNoMillis', 'week_year', 'weekyearWeek', 'weekyearWeekDay', 'year', 'year_month', 'year_month_day');
+  }
+
+  function getServerMajorVersionNumber(){
+    $info = $this->getServerInfo()['server_info'];
+    return (int)explode('.', $info['version']['number'])[0];
+  }
+
+  public function putMapping($indexName, $mappingName, $mapping, $dynamicTemplates = NULL, $wipeData = false) {
+    if ($wipeData) {
+      $this->deleteByQuery($indexName, $mappingName, array(
+        'query' => array(
+          'match_all' => array('boost' => 1)
+        )
+      ));
+    }
+
+    $body = array(
+      'properties' => $mapping
+    );
+    if($dynamicTemplates != NULL) {
+      $body['dynamic_templates'] = $dynamicTemplates;
+    }
     $this->client->indices()->putMapping(array(
       'index' => $indexName,
       'type' => $mappingName,
-      'body' => $mapping
+      'body' => $body
     ));
   }
 
@@ -113,7 +243,7 @@ class IndexManager
     $mapping = $this->getMapping(static::APP_INDEX_NAME, 'store_item');
     if($mapping == null) {
       $json = json_decode(file_get_contents(__DIR__ . '/../Resources/store_structure.json'), TRUE);
-      $this->createMapping(static::APP_INDEX_NAME, 'store_item', array('properties' => $json['mapping']));
+      $this->putMapping(static::APP_INDEX_NAME, 'store_item', array('properties' => $json['mapping']));
     }
     $users = $this->listObjects('user');
     if(empty($users)) {
@@ -200,6 +330,59 @@ class IndexManager
       $objects[] = unserialize($hit['_source']['data']);
     }
     return $objects;
+  }
+
+  public function deleteByQuery($indexName, $mappingName, $query)
+  {
+    if($this->getServerMajorVersionNumber() >= 5) {
+      $this->client->deleteByQuery(array(
+        'index' => $indexName,
+        'type' => $mappingName,
+        'body' => $query
+      ));
+    }
+    else{
+      //Delete by query is not available on ES 2.x clusters so let's do it on our own
+      $this->scroll($query, $indexName, $mappingName, function($items){
+        $this->bulkDelete($items);
+      },500);
+    }
+  }
+
+  public function scroll($queryBody, $index, $mapping, $callback, $size = 10)
+  {
+    $r = $this->client->search(array(
+      'index' => $index,
+      'type' => $mapping,
+      'body' => $queryBody,
+      'scroll' => '10ms',
+      'size' => $size
+    ));
+    if (isset($r['_scroll_id'])) {
+      while (count($r['hits']['hits']) > 0) {
+        $callback($r['hits']['hits']);
+        $scrollId = $r['_scroll_id'];
+        $r = $this->client->scroll(array(
+          'scroll_id' => $scrollId,
+          'scroll' => '1m'
+        ));
+      }
+    }
+  }
+
+  public function bulkDelete($items)
+  {
+    $bulkString = '';
+    foreach ($items as $item) {
+      $data = array('delete' => array('_index' => $item['_index'], '_type' => $item['_type'], '_id' => $item['_id']));
+      $bulkString .= json_encode($data) . "\n";
+    }
+    if (count($items) > 0) {
+      $params['index'] = $items[0]['_index'];
+      $params['type'] = $items[0]['_type'];
+      $params['body'] = $bulkString;
+      $this->client->bulk($params);
+    }
   }
 
 }
