@@ -284,7 +284,7 @@ class IndexManager
   }
 
   public function deleteObject($id) {
-    $this->client->indices()->delete(array(
+    $this->client->delete(array(
       'index' => static::APP_INDEX_NAME,
       'type' => 'store_item',
       'id' => $id
