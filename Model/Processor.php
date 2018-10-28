@@ -110,7 +110,7 @@ class Processor extends PersistentObject
 
   function getName()
   {
-    return $this->datasourceId . ' --> ' . $this->target;
+    return $this->datasourceId . ' __TO__ ' . $this->target;
   }
 
   function getType()
