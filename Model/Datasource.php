@@ -1,15 +1,9 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: louis
- * Date: 28/10/2018
- * Time: 16:41
- */
 
 namespace AdimeoDataSuite\Bundle\CommonsBundle\Model;
 
 
-abstract class Datasource extends PersistentObject
+abstract class Datasource extends PersistentObject implements Instantiable
 {
   private $id;
 
@@ -42,12 +36,6 @@ abstract class Datasource extends PersistentObject
    * @return array
    */
   abstract function getExecutionArguments();
-
-  /**
-   * @param array $settings
-   * @return Datasource
-   */
-  abstract static function instantiate($settings);
 
   /**
    * @param array $args
