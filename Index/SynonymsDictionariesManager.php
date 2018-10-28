@@ -31,7 +31,10 @@ class SynonymsDictionariesManager
     $dictionaries = [];
     foreach($files as $file) {
       if(is_file($this->dictionariesPath . DIRECTORY_SEPARATOR . $file)) {
-        $dictionaries[] = $this->dictionariesPath . DIRECTORY_SEPARATOR . $file;
+        $dictionaries[] = array(
+          'path' => $this->dictionariesPath . DIRECTORY_SEPARATOR . $file,
+          'name' => $file
+        );
       }
     }
     return $dictionaries;
