@@ -327,7 +327,9 @@ class IndexManager
     $r = $this->search(static::APP_INDEX_NAME, $query);
     $objects = [];
     foreach($r['hits']['hits'] as $hit) {
-      $objects[] = unserialize($hit['_source']['data']);
+      $object = unserialize($hit['_source']['data']);
+      $object->setId($hit['_source']['_id']);
+      $objects[] = $object;
     }
     return $objects;
   }
