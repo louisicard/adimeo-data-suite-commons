@@ -61,5 +61,9 @@ abstract class Datasource extends PersistentObject implements Instantiable
     $this->createdBy = $createdBy;
   }
 
+  final function index($data) {
+
+  }
+
 
 }
