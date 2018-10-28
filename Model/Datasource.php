@@ -40,7 +40,7 @@ abstract class Datasource extends PersistentObject implements Instantiable
   /**
    * @param array $args
    */
-  abstract function execute($args);
+  abstract function execute($args, OutputManager $output);
 
 
   private $createdBy;
