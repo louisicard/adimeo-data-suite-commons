@@ -6,7 +6,7 @@ namespace AdimeoDataSuite\Bundle\CommonsBundle\Model;
 abstract class Datasource extends PersistentObject
 {
   private $id;
-  private $name;
+  private $settings;
 
   final function getId()
   {
@@ -21,17 +21,25 @@ abstract class Datasource extends PersistentObject
   /**
    * @return mixed
    */
-  public function getName()
+  public function getSettings()
   {
-    return $this->name;
+    return $this->settings;
   }
 
   /**
-   * @param mixed $name
+   * @param mixed $settings
    */
-  public function setName($name)
+  public function setSettings($settings)
   {
-    $this->name = $name;
+    $this->settings = $settings;
+  }
+
+  /**
+   * @return mixed
+   */
+  public function getName()
+  {
+    return isset($this->settings['name']) ? $this->settings['name'] : '';
   }
 
   final function getType()
@@ -58,11 +66,6 @@ abstract class Datasource extends PersistentObject
    * @return string
    */
   abstract function getDisplayName();
-
-  /**
-   * @param array $settings
-   */
-  abstract function hydrate($settings);
 
   /**
    * @param array $args
