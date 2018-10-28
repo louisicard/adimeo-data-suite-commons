@@ -20,6 +20,16 @@ class SynonymsDictionariesManager
     $this->dictionariesPath = $dictionariesPath;
   }
 
+  public function getDictionariesPath() {
+    if($this->dictionariesPath == NULL
+      || $this->dictionariesPath == ''
+      || !file_exists($this->dictionariesPath)
+      || !is_dir($this->dictionariesPath)
+      || !is_writable($this->dictionariesPath))
+      throw new DictionariesPathNotDefinedException();
+    return $this->dictionariesPath;
+  }
+
   public function getDictionaries() {
     if($this->dictionariesPath == NULL
         || $this->dictionariesPath == ''
