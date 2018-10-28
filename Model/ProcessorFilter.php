@@ -55,6 +55,8 @@ abstract class ProcessorFilter
     return $this->argumentsData;
   }
 
+  abstract function getSettingsFields();
+
   /**
    * @return array
    */
