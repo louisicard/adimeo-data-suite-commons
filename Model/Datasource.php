@@ -6,6 +6,7 @@ namespace AdimeoDataSuite\Bundle\CommonsBundle\Model;
 abstract class Datasource extends PersistentObject
 {
   private $id;
+  private $displayName;
 
   final function getId()
   {
@@ -15,6 +16,22 @@ abstract class Datasource extends PersistentObject
   final function setId($id)
   {
     $this->id = $id;
+  }
+
+  /**
+   * @return mixed
+   */
+  public function getDisplayName()
+  {
+    return $this->displayName;
+  }
+
+  /**
+   * @param mixed $displayName
+   */
+  public function setDisplayName($displayName)
+  {
+    $this->displayName = $displayName;
   }
 
   final function getType()
