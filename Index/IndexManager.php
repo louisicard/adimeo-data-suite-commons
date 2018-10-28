@@ -283,6 +283,15 @@ class IndexManager
     return $o;
   }
 
+  public function deleteObject($id) {
+    $this->client->indices()->delete(array(
+      'index' => static::APP_INDEX_NAME,
+      'type' => 'store_item',
+      'id' => $id
+    ));
+    $this->client->indices()->flush();
+  }
+
   public function findObject($type, $id) {
     $query = array(
       'query' => array(
