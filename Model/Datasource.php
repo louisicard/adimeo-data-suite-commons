@@ -3,7 +3,7 @@
 namespace AdimeoDataSuite\Bundle\CommonsBundle\Model;
 
 
-abstract class Datasource extends PersistentObject implements Instantiable
+abstract class Datasource extends PersistentObject
 {
   private $id;
 
@@ -36,6 +36,11 @@ abstract class Datasource extends PersistentObject implements Instantiable
    * @return array
    */
   abstract function getExecutionArguments();
+
+  /**
+   * @param array $settings
+   */
+  abstract function hydrate($settings);
 
   /**
    * @param array $args
