@@ -3,6 +3,7 @@
 namespace AdimeoDataSuite\Index;
 
 use AdimeoDataSuite\Model\PersistentObject;
+use AdimeoDataSuite\Model\SecurityContext;
 use Elasticsearch\Client;
 use Elasticsearch\ClientBuilder;
 
@@ -308,7 +309,7 @@ class IndexManager
     }
   }
 
-  public function listObjects($type, $from = 0, $size = 20, $order = 'asc') {
+  public function listObjects($type, $from = 0, $size = 20, $order = 'asc', SecurityContext $securityContext = NULL) {
     $query = array(
       'query' => array(
         'term' => array(
