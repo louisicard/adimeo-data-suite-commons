@@ -390,7 +390,7 @@ class IndexManager
         }
         $query['query']['bool']['should'][0]['bool']['must'][] = $procQuery;
       }
-      if($type == 'searchPage') {
+      if($type == 'search_page') {
         $spQuery = array(
           'bool' => array(
             'should' => array(
