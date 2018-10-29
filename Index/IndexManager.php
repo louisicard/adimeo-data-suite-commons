@@ -75,6 +75,7 @@ class IndexManager
         );
       }
     }
+    ksort($info);
     if($context != NULL) {
       foreach($info as $k => $data) {
         if(!in_array($k, $context->getRestrictions()['indexes']))
