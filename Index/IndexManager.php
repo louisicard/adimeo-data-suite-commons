@@ -346,6 +346,7 @@ class IndexManager
       $restricted = array(
         'datasource' => 'datasources',
         'matching_list' => 'matchingLists',
+        //TODO: Potential bug = multiple parameters can share the same name in different contexts which could lead to major problems when executing datasources outside context
         'parameter' => 'parameters'
       );
       foreach($restricted as $restrictionType => $restriction) {
@@ -358,7 +359,6 @@ class IndexManager
         }
       }
       if($type == 'processor') {
-        //TODO: Potential bug = multiple parameters can share the same name in different contexts which could lead to major problems when executing datasources outside context
         $procQuery = array(
           'bool' => array(
             'must' => array(
@@ -392,6 +392,27 @@ class IndexManager
         $query['query']['bool']['should'][0]['bool']['must'][] = $procQuery;
       }
       if($type == 'search_page') {
+        $spQuery = array(
+          'bool' => array(
+            'must' => array(
+              array(
+                'bool' => array(
+                  'should' => []
+                )
+              )
+            )
+          )
+        );
+        foreach($context->getRestrictions()['indexes'] as $spIndexes) {
+          $spQuery['bool']['must'][0]['bool']['should'][] = array(
+            'term' => array(
+              'tags' => 'index_name=' . $spIndexes
+            )
+          );
+        }
+        $query['query']['bool']['should'][0]['bool']['must'][] = $spQuery;
+      }
+      if($type == 'autopromote') {
         $spQuery = array(
           'bool' => array(
             'must' => array(
