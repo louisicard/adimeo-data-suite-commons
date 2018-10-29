@@ -236,7 +236,7 @@ class IndexManager
     $mapping = $this->getMapping(static::APP_INDEX_NAME, 'store_item');
     if($mapping == null) {
       $json = json_decode(file_get_contents(__DIR__ . '/../Resources/store_structure.json'), TRUE);
-      $this->putMapping(static::APP_INDEX_NAME, 'store_item', array('properties' => $json['mapping']));
+      $this->putMapping(static::APP_INDEX_NAME, 'store_item', $json['mapping']);
     }
   }
 
