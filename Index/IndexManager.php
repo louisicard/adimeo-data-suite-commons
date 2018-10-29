@@ -317,7 +317,7 @@ class IndexManager
     }
   }
 
-  public function listObjects($type, SecurityContext $context = NULL, $from = 0, $size = 20, $order = 'asc') {
+  public function listObjects($type, SecurityContext $context = NULL, $from = 0, $size = 10000, $order = 'asc') {
     $query = array(
       'query' => array(
         'bool' => array(
