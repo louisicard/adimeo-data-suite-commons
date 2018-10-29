@@ -1,6 +1,6 @@
 <?php
 
-namespace AdimeoDataSuite\Bundle\CommonsBundle\Model;
+namespace AdimeoDataSuite\Model;
 
 
 class Processor extends PersistentObject

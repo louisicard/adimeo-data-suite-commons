@@ -1,9 +1,0 @@
-services:
-  adimeo_data_suite_es_server:
-    class: AdimeoDataSuite\Bundle\CommonsBundle\Index\IndexManager
-    arguments: ["%env(ELASTICSEARCH_SERVER_URL)%", "@security.password_encoder"]
-    public: true
-  adimeo_data_suite_synonyms_dictionaries_manager:
-    class: AdimeoDataSuite\Bundle\CommonsBundle\Index\SynonymsDictionariesManager
-    arguments: ["%env(SYNONYMS_DICTIONARIES_PATH)%"]
-    public: true

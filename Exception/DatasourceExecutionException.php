@@ -6,7 +6,7 @@
  * Time: 17:31
  */
 
-namespace AdimeoDataSuite\Bundle\CommonsBundle\Exception;
+namespace AdimeoDataSuite\Exception;
 
 
 class DatasourceExecutionException extends \Exception

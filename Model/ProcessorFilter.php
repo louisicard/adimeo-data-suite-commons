@@ -1,12 +1,6 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: louis
- * Date: 28/10/2018
- * Time: 19:50
- */
 
-namespace AdimeoDataSuite\Bundle\CommonsBundle\Model;
+namespace AdimeoDataSuite\Model;
 
 
 abstract class ProcessorFilter

@@ -1,12 +1,10 @@
 <?php
 
-namespace AdimeoDataSuite\Bundle\CommonsBundle\Index;
+namespace AdimeoDataSuite\Index;
 
-use AdimeoDataSuite\Bundle\CommonsBundle\Model\PersistentObject;
-use AdimeoDataSuite\Bundle\ADSSecurityBundle\Security\User;
+use AdimeoDataSuite\Model\PersistentObject;
 use Elasticsearch\Client;
 use Elasticsearch\ClientBuilder;
-use Symfony\Component\Security\Core\Encoder\PasswordEncoderInterface;
 
 class IndexManager
 {
@@ -19,19 +17,13 @@ class IndexManager
    */
   private $client;
 
-  /**
-   * @var PasswordEncoderInterface
-   */
-  private $passwordEncoder;
-
-  public function __construct($elasticsearchServerUrl, $passwordEncoder = null) {
+  public function __construct($elasticsearchServerUrl) {
     $clientBuilder = new ClientBuilder();
     if(!defined('JSON_PRESERVE_ZERO_FRACTION')){
       $clientBuilder->allowBadJSONSerialization();
     }
     $clientBuilder->setHosts(array($elasticsearchServerUrl));
     $this->client = $clientBuilder->build();
-    $this->passwordEncoder = $passwordEncoder;
   }
 
 
@@ -244,13 +236,6 @@ class IndexManager
     if($mapping == null) {
       $json = json_decode(file_get_contents(__DIR__ . '/../Resources/store_structure.json'), TRUE);
       $this->putMapping(static::APP_INDEX_NAME, 'store_item', array('properties' => $json['mapping']));
-    }
-    $users = $this->listObjects('user');
-    if(empty($users)) {
-      $user = new User('admin', array('ROLE_ADMIN'), 'admin@example.com', 'Administrator', array());
-      $encoded = $this->passwordEncoder->encodePassword($user, 'admin');
-      $user->setPassword($encoded);
-      $this->persistObject($user);
     }
   }
 

@@ -6,10 +6,10 @@
  * Time: 11:31
  */
 
-namespace AdimeoDataSuite\Bundle\CommonsBundle\Index;
+namespace AdimeoDataSuite\Index;
 
 
-use AdimeoDataSuite\Bundle\CommonsBundle\Exception\DictionariesPathNotDefinedException;
+use AdimeoDataSuite\Exception\DictionariesPathNotDefinedException;
 
 class SynonymsDictionariesManager
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace AdimeoDataSuite\Bundle\CommonsBundle\Exception;
+namespace AdimeoDataSuite\Exception;
 
 class DictionariesPathNotDefinedException extends \Exception
 {

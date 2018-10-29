@@ -1,19 +1,9 @@
 {
 	"name": "adimeo-data-suite/commons",
-  "type": "symfony-bundle",
   "autoload": {
-    "psr-4": { "AdimeoDataSuite\\Bundle\\CommonsBundle\\": "" }
+    "psr-4": { "AdimeoDataSuite\\": "" }
   },
   "require": {
-    "symfony/framework-bundle": "*",
-    "symfony/security": "*",
-    "elasticsearch/elasticsearch": "5.x",
-    "adimeo-data-suite/security": "dev-master"
-  },
-  "repositories": [
-    {
-      "type": "vcs",
-      "url": "https://github.com/louisicard/adimeo-data-suite-security"
-    }
-  ]
+    "elasticsearch/elasticsearch": "5.x"
+  }
 }
