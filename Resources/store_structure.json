@@ -39,6 +39,10 @@
       "type": "keyword",
       "store": true
     },
+    "tags": {
+      "type": "keyword",
+      "store": true
+    },
     "created_by": {
       "type": "keyword",
       "store": true

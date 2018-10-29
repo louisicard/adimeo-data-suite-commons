@@ -127,4 +127,18 @@ class Processor extends PersistentObject
     $this->targetSiblings = $targetSiblings;
   }
 
+  public function getTags()
+  {
+    if(strpos($this->getTarget(), '.') === 0) {
+      $indexName = explode('.', $this->getTarget())[1];
+    }
+    else {
+      $indexName = explode('.', $this->getTarget())[0];
+    }
+    return array(
+      'datasource_id=' . $this->getDatasourceId(),
+      'index_name=' . $indexName
+    );
+  }
+
 }

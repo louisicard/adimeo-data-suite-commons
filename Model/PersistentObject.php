@@ -36,4 +36,8 @@ abstract class PersistentObject
     return unserialize($str);
   }
 
+  public function getTags() {
+    return [];
+  }
+
 }

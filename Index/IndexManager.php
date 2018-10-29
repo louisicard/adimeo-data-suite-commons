@@ -263,6 +263,7 @@ class IndexManager
         'name' => $o->getName(),
         'type' => $o->getType(),
         'created_by' => $o->getCreatedBy(),
+        'tags' => $o->getTags(),
         'data' => $o->serialize()
       )
     );
