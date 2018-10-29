@@ -10,6 +10,7 @@ namespace AdimeoDataSuite\Index;
 
 
 use AdimeoDataSuite\Exception\DictionariesPathNotDefinedException;
+use AdimeoDataSuite\Model\SecurityContext;
 
 class SynonymsDictionariesManager
 {
@@ -30,7 +31,7 @@ class SynonymsDictionariesManager
     return $this->dictionariesPath;
   }
 
-  public function getDictionaries() {
+  public function getDictionaries(SecurityContext $context = NULL) {
     if($this->dictionariesPath == NULL
         || $this->dictionariesPath == ''
         || !file_exists($this->dictionariesPath)
@@ -41,10 +42,12 @@ class SynonymsDictionariesManager
     $dictionaries = [];
     foreach($files as $file) {
       if(is_file($this->dictionariesPath . DIRECTORY_SEPARATOR . $file)) {
-        $dictionaries[] = array(
-          'path' => $this->dictionariesPath . DIRECTORY_SEPARATOR . $file,
-          'name' => $file
-        );
+        if($context->isAdmin() || in_array($file, $context->getRestrictions()['restrictions'])) {
+          $dictionaries[] = array(
+            'path' => $this->dictionariesPath . DIRECTORY_SEPARATOR . $file,
+            'name' => $file
+          );
+        }
       }
     }
     return $dictionaries;
