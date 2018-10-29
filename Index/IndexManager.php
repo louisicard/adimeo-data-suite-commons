@@ -356,6 +356,39 @@ class IndexManager
           );
         }
       }
+      if($type == 'processor') {
+        $procQuery = array(
+          'bool' => array(
+            'should' => array(
+              array(
+                'bool' => array(
+                  'must' => []
+                )
+              ),
+              array(
+                'bool' => array(
+                  'must' => []
+                )
+              )
+            )
+          )
+        );
+        foreach($context->getRestrictions()['datasources'] as $procDs) {
+          $procQuery['bool']['should'][0][] = array(
+            'term' => array(
+              'tags' => 'datasource_id=' . $procDs
+            )
+          );
+        }
+        foreach($context->getRestrictions()['indexes'] as $procIndexes) {
+          $procQuery['bool']['should'][1][] = array(
+            'term' => array(
+              'tags' => 'index_name=' . $procIndexes
+            )
+          );
+        }
+        $query['query']['bool']['should'][0]['bool']['must'][] = $procQuery;
+      }
       $query['query']['bool']['should'][] = array(
         'bool' => array(
           'must' => array(
