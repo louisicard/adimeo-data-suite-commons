@@ -390,6 +390,27 @@ class IndexManager
         }
         $query['query']['bool']['should'][0]['bool']['must'][] = $procQuery;
       }
+      if($type == 'searchPage') {
+        $spQuery = array(
+          'bool' => array(
+            'should' => array(
+              array(
+                'bool' => array(
+                  'must' => []
+                )
+              )
+            )
+          )
+        );
+        foreach($context->getRestrictions()['indexes'] as $spIndexes) {
+          $spQuery['bool']['should'][1]['bool']['must'][] = array(
+            'term' => array(
+              'tags' => 'index_name=' . $spIndexes
+            )
+          );
+        }
+        $query['query']['bool']['should'][0]['bool']['must'][] = $spQuery;
+      }
       $query['query']['bool']['should'][] = array(
         'bool' => array(
           'must' => array(
