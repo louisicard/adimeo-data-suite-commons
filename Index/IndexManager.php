@@ -345,7 +345,8 @@ class IndexManager
     if($context != null && !$context->isAdmin()) {
       $restricted = array(
         'datasource' => 'datasources',
-        'matching_list' => 'matchingLists'
+        'matching_list' => 'matchingLists',
+        'parameter' => 'parameters'
       );
       foreach($restricted as $restrictionType => $restriction) {
         if ($type == $restrictionType) {
