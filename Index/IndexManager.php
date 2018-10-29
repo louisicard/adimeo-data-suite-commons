@@ -36,7 +36,7 @@ class IndexManager
     );
   }
 
-  public function getIndicesList() {
+  public function getIndicesList(SecurityContext $context = NULL) {
     $mappings = $this->client->indices()->getMapping();
     $settings = $this->client->indices()->getSettings();
     $indices = $this->client->indices()->stats()['indices'];
@@ -49,19 +49,20 @@ class IndexManager
       }
     }
     ksort($indices);
+    if($context != NULL) {
+      foreach($indices as $k => $data) {
+        if(!in_array($k, $context->getRestrictions()['indexes']))
+          unset($indices[$k]);
+      }
+    }
     return $indices;
   }
 
-  function getIndicesInfo($checkACL = true)
+  function getIndicesInfo(SecurityContext $context = NULL)
   {
     $info = array();
     $stats = $this->client->indices()->stats();
-    //TODO: Check access rights
-//    if($checkACL) {
-//      $allowed_indexes = $this->getCurrentUserAllowedIndexes();
-//    }
     foreach ($stats['indices'] as $index_name => $stat) {
-//      if(!$checkACL || $this->isCurrentUserAdmin() || in_array($index_name, $allowed_indexes)) {
       $info[$index_name] = array(
         'count' => $stat['total']['docs']['count'] - $stat['total']['docs']['deleted'],
         'size' => round($stat['total']['store']['size_in_bytes'] / 1024 / 1024, 2) . ' MB',
@@ -72,7 +73,12 @@ class IndexManager
           'name' => $mapping,
           'field_count' => count($properties['properties']),
         );
-//        }
+      }
+    }
+    if($context != NULL) {
+      foreach($info as $k => $data) {
+        if(!in_array($k, $context->getRestrictions()['indexes']))
+          unset($info[$k]);
       }
     }
     unset($stats);
@@ -309,7 +315,7 @@ class IndexManager
     }
   }
 
-  public function listObjects($type, $from = 0, $size = 20, $order = 'asc', SecurityContext $securityContext = NULL) {
+  public function listObjects($type, $from = 0, $size = 20, $order = 'asc') {
     $query = array(
       'query' => array(
         'term' => array(
