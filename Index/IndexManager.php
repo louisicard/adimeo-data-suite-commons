@@ -360,29 +360,29 @@ class IndexManager
       if($type == 'processor') {
         $procQuery = array(
           'bool' => array(
-            'should' => array(
+            'must' => array(
               array(
                 'bool' => array(
-                  'must' => []
+                  'should' => []
                 )
               ),
               array(
                 'bool' => array(
-                  'must' => []
+                  'should' => []
                 )
               )
             )
           )
         );
         foreach($context->getRestrictions()['datasources'] as $procDs) {
-          $procQuery['bool']['should'][0]['bool']['must'][] = array(
+          $procQuery['bool']['must'][0]['bool']['should'][] = array(
             'term' => array(
               'tags' => 'datasource_id=' . $procDs
             )
           );
         }
         foreach($context->getRestrictions()['indexes'] as $procIndexes) {
-          $procQuery['bool']['should'][1]['bool']['must'][] = array(
+          $procQuery['bool']['must'][1]['bool']['should'][] = array(
             'term' => array(
               'tags' => 'index_name=' . $procIndexes
             )
@@ -393,17 +393,17 @@ class IndexManager
       if($type == 'search_page') {
         $spQuery = array(
           'bool' => array(
-            'should' => array(
+            'must' => array(
               array(
                 'bool' => array(
-                  'must' => []
+                  'should' => []
                 )
               )
             )
           )
         );
         foreach($context->getRestrictions()['indexes'] as $spIndexes) {
-          $spQuery['bool']['should'][0]['bool']['must'][] = array(
+          $spQuery['bool']['must'][0]['bool']['should'][] = array(
             'term' => array(
               'tags' => 'index_name=' . $spIndexes
             )
