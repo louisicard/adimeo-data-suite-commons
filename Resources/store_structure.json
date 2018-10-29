@@ -38,6 +38,10 @@
     "type": {
       "type": "keyword",
       "store": true
+    },
+    "created_by": {
+      "type": "keyword",
+      "store": true
     }
   }
 }

@@ -254,6 +254,7 @@ class IndexManager
       'body' => array(
         'name' => $o->getName(),
         'type' => $o->getType(),
+        'created_by' => $o->getCreatedBy(),
         'data' => $o->serialize()
       )
     );
