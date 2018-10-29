@@ -316,11 +316,23 @@ class IndexManager
     }
   }
 
-  public function listObjects($type, $from = 0, $size = 20, $order = 'asc') {
+  public function listObjects($type, SecurityContext $context = NULL, $from = 0, $size = 20, $order = 'asc') {
     $query = array(
       'query' => array(
-        'term' => array(
-          'type' => $type
+        'bool' => array(
+          'should' => array(
+            array(
+              'bool' => array(
+                'must' => [
+                  array(
+                    'term' => array(
+                      'type' => $type
+                    )
+                  )
+                ]
+              )
+            )
+          )
         )
       ),
       'size' => $size,
@@ -329,6 +341,37 @@ class IndexManager
         'name.raw' => $order
       )
     );
+    if($context != null && !$context->isAdmin()) {
+      $restricted = array(
+        'datasource' => 'datasources',
+        'matching_list' => 'matchingLists'
+      );
+      foreach($restricted as $restrictionType => $restriction) {
+        if ($type == $restrictionType) {
+          $query['query']['bool']['should'][0]['bool']['must'][] = array(
+            'ids' => array(
+              'values' => $context->getRestrictions()[$restriction]
+            )
+          );
+        }
+      }
+      $query['query']['bool']['should'][] = array(
+        'bool' => array(
+          'must' => array(
+            array(
+              'term' => array(
+                'created_by' => $context->getUserUid()
+              )
+            ),
+            array(
+              'term' => array(
+                'type' => $type
+              )
+            )
+          )
+        )
+      );
+    }
     $r = $this->search(static::APP_INDEX_NAME, $query);
     $objects = [];
     foreach($r['hits']['hits'] as $hit) {
