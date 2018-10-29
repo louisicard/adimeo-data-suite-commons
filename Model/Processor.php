@@ -130,7 +130,7 @@ class Processor extends PersistentObject
   public function getTags()
   {
     if(strpos($this->getTarget(), '.') === 0) {
-      $indexName = explode('.', $this->getTarget())[1];
+      $indexName = '.' . explode('.', $this->getTarget())[1];
     }
     else {
       $indexName = explode('.', $this->getTarget())[0];
