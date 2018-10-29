@@ -443,7 +443,7 @@ class IndexManager
             ),
             array(
               'term' => array(
-                'typeee' => $type
+                'type' => $type
               )
             )
           )
