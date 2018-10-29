@@ -42,7 +42,7 @@ class SynonymsDictionariesManager
     $dictionaries = [];
     foreach($files as $file) {
       if(is_file($this->dictionariesPath . DIRECTORY_SEPARATOR . $file)) {
-        if($context->isAdmin() || in_array($file, $context->getRestrictions()['restrictions'])) {
+        if($context == NULL || $context->isAdmin() || in_array($file, $context->getRestrictions()['restrictions'])) {
           $dictionaries[] = array(
             'path' => $this->dictionariesPath . DIRECTORY_SEPARATOR . $file,
             'name' => $file
