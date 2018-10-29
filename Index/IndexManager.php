@@ -49,7 +49,7 @@ class IndexManager
       }
     }
     ksort($indices);
-    if($context != NULL) {
+    if($context != NULL && !$context->isAdmin()) {
       foreach($indices as $k => $data) {
         if(!in_array($k, $context->getRestrictions()['indexes']))
           unset($indices[$k]);
@@ -76,7 +76,7 @@ class IndexManager
       }
     }
     ksort($info);
-    if($context != NULL) {
+    if($context != NULL && !$context->isAdmin()) {
       foreach($info as $k => $data) {
         if(!in_array($k, $context->getRestrictions()['indexes']))
           unset($info[$k]);

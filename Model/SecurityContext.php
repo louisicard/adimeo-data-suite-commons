@@ -13,6 +13,10 @@ class SecurityContext
 {
 
   private $userUid;
+
+  /** @var  boolean */
+  private $isAdmin;
+
   private $restrictions;
 
   /**
@@ -45,6 +49,22 @@ class SecurityContext
   public function setRestrictions($restrictions)
   {
     $this->restrictions = $restrictions;
+  }
+
+  /**
+   * @return bool
+   */
+  public function isAdmin()
+  {
+    return $this->isAdmin;
+  }
+
+  /**
+   * @param bool $isAdmin
+   */
+  public function setIsAdmin($isAdmin)
+  {
+    $this->isAdmin = $isAdmin;
   }
 
 
