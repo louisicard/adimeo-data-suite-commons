@@ -513,4 +513,14 @@ class IndexManager
     }
   }
 
+  public function mappingExists($indexName, $mappingName){
+    $mappings = $this->getIndicesInfo(NULL)[$indexName]['mappings'];
+    foreach($mappings as $mapping){
+      if($mapping['name'] == $mappingName){
+        return true;
+      }
+    }
+    return false;
+  }
+
 }
