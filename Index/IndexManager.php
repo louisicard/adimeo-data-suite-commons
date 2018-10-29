@@ -374,14 +374,14 @@ class IndexManager
           )
         );
         foreach($context->getRestrictions()['datasources'] as $procDs) {
-          $procQuery['bool']['should'][0][] = array(
+          $procQuery['bool']['should'][0]['bool']['must'][] = array(
             'term' => array(
               'tags' => 'datasource_id=' . $procDs
             )
           );
         }
         foreach($context->getRestrictions()['indexes'] as $procIndexes) {
-          $procQuery['bool']['should'][1][] = array(
+          $procQuery['bool']['should'][1]['bool']['must'][] = array(
             'term' => array(
               'tags' => 'index_name=' . $procIndexes
             )
