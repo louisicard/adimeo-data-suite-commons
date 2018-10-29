@@ -72,25 +72,6 @@ abstract class Datasource extends PersistentObject
    */
   abstract function execute($args, OutputManager $output);
 
-
-  private $createdBy;
-
-  /**
-   * @return mixed
-   */
-  public function getCreatedBy()
-  {
-    return $this->createdBy;
-  }
-
-  /**
-   * @param mixed $createdBy
-   */
-  public function setCreatedBy($createdBy)
-  {
-    $this->createdBy = $createdBy;
-  }
-
   final function index($data) {
 
   }
