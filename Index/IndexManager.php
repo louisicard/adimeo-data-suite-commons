@@ -358,6 +358,7 @@ class IndexManager
         }
       }
       if($type == 'processor') {
+        //TODO: Potential bug = multiple parameters can share the same name in different contexts which could lead to major problems when executing datasources outside context
         $procQuery = array(
           'bool' => array(
             'must' => array(
