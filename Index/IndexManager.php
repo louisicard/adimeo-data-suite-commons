@@ -403,7 +403,7 @@ class IndexManager
           )
         );
         foreach($context->getRestrictions()['indexes'] as $spIndexes) {
-          $spQuery['bool']['should'][1]['bool']['must'][] = array(
+          $spQuery['bool']['should'][0]['bool']['must'][] = array(
             'term' => array(
               'tags' => 'index_name=' . $spIndexes
             )
