@@ -432,8 +432,8 @@ class IndexManager
         }
         $query['query']['bool']['should'][0]['bool']['must'][] = $spQuery;
       }
-      if($type == 'autopromote') {
-        $spQuery = array(
+      if($type == 'boost_query') {
+        $bqQuery = array(
           'bool' => array(
             'must' => array(
               array(
@@ -444,14 +444,14 @@ class IndexManager
             )
           )
         );
-        foreach($context->getRestrictions()['indexes'] as $spIndexes) {
-          $spQuery['bool']['must'][0]['bool']['should'][] = array(
+        foreach($context->getRestrictions()['indexes'] as $bqIndexes) {
+          $bqQuery['bool']['must'][0]['bool']['should'][] = array(
             'term' => array(
-              'tags' => 'index_name=' . $spIndexes
+              'tags' => 'index_name=' . $bqIndexes
             )
           );
         }
-        $query['query']['bool']['should'][0]['bool']['must'][] = $spQuery;
+        $query['query']['bool']['should'][0]['bool']['must'][] = $bqQuery;
       }
       $query['query']['bool']['should'][] = array(
         'bool' => array(
