@@ -83,5 +83,11 @@ class BoostQuery extends PersistentObject
     return 'boost_query';
   }
 
+  public function getTags()
+  {
+    return array(
+      'index_name=' . $this->getTarget()
+    );
+  }
 
 }
