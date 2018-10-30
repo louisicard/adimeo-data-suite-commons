@@ -13,7 +13,7 @@
           "store": true
         }
       },
-      "analyzer": "case_insensitive_sort"
+      "analyzer": "standard"
     },
     "keywords": {
       "type": "text",
