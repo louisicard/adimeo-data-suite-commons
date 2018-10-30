@@ -29,6 +29,12 @@ class IndexManager
     $this->client = $clientBuilder->build();
   }
 
+  /**
+   * @return Client
+   */
+  public function getClient() {
+    return $this->client;
+  }
 
   public function getServerInfo() {
     return array(
