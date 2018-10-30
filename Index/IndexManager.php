@@ -532,9 +532,18 @@ class IndexManager
     }
   }
 
+  public function getAutopromoteIndexName($fromIndex) {
+    return '.ads_autopromote_' . str_replace('.', '', $fromIndex);
+  }
+
+  public function getAutopromoteAnalyzer($fromIndex) {
+    $mapping = $this->getMapping($this->getAutopromoteIndexName($fromIndex), 'autopromote');
+    return $mapping['properties']['keywords']['analyzer'];
+  }
+
   public function createAutopromoteIndex($fromIndex, $analyzer) {
     $index = $this->getIndex($fromIndex);
-    $indexName = '.ads_autopromote_' . str_replace('.', '', $fromIndex);
+    $indexName = $this->getAutopromoteIndexName($fromIndex);
     $this->createIndex('.ads_autopromote_' . str_replace('.', '', $fromIndex), array(
       'analysis' => $index[$fromIndex]['settings']['index']['analysis']
     ));
