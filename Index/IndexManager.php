@@ -267,12 +267,30 @@ class IndexManager
     }
   }
 
-  public function search($indexName, $query, $type = '') {
-    return $this->client->search(array(
+  public function search($indexName, $query, $from = 0, $size = 20, $type = null) {
+    $this->sanitizeGlobalAgg($query);
+    $params = array(
       'index' => $indexName,
-      'type' => $type,
-      'body' => $query
-    ));
+      'body' =>$query
+    );
+    if($type != null) {
+      $params['type'] = $type;
+    }
+    $params['body']['from'] = $from;
+    $params['body']['size'] = $size;
+    return $this->client->search($params);
+  }
+
+  private function sanitizeGlobalAgg(&$array)
+  { //Bug fix form empty queries in global aggregations
+    if ($array != null) {
+      foreach ($array as $k => $v) {
+        if ($k == 'global' && empty($v))
+          $array[$k] = new \stdClass();
+        elseif (is_array($v))
+          $this->sanitizeGlobalAgg($array[$k]);
+      }
+    }
   }
 
   public function persistObject(PersistentObject $o) {
