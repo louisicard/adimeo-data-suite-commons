@@ -2,6 +2,7 @@
 
 namespace AdimeoDataSuite\Index;
 
+use AdimeoDataSuite\Model\Autopromote;
 use AdimeoDataSuite\Model\PersistentObject;
 use AdimeoDataSuite\Model\SecurityContext;
 use Elasticsearch\Client;
@@ -550,6 +551,27 @@ class IndexManager
     $json = json_decode(file_get_contents(__DIR__ . '/../Resources/autopromote_structure.json'), TRUE);
     $json['mapping']['keywords']['analyzer'] = $analyzer;
     $this->putMapping($indexName, 'autopromote', $json['mapping']);
+  }
+
+  public function saveAutopromote(Autopromote $autopromote) {
+    $doc = array(
+      'name' => $autopromote->getName(),
+      'keywords' => $autopromote->getKeywords(),
+      'data' => serialize($autopromote)
+    );
+    $params = array(
+      'index' => $this->getAutopromoteIndexName($autopromote->getIndex()),
+      'type' => 'autopromote',
+      'body' => $doc
+    );
+    if($autopromote->getId() != NULL) {
+      $params['id'] = $autopromote->getId();
+    }
+    $r = $this->client->index($params);
+    if(isset($r['_id'])){
+      $autopromote->setId($r['_id']);
+    }
+    $this->client->indices()->flush();
   }
 
 }
