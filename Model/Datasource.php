@@ -3,6 +3,8 @@
 namespace AdimeoDataSuite\Model;
 
 
+use AdimeoDataSuite\Index\IndexManager;
+
 abstract class Datasource extends PersistentObject
 {
   private $id;
@@ -91,6 +93,19 @@ abstract class Datasource extends PersistentObject
 
   final function index($data) {
 
+  }
+
+  /** @var IndexManager */
+  private $execIndexManager = null;
+
+  /** @var Processor[] */
+  private $execProcessors = [];
+
+  final function initForExecution(IndexManager $indexManager) {
+    $this->execIndexManager = $indexManager;
+    $this->execProcessors = $this->execIndexManager->listObjects('processor', null, 0, 10000, 'asc', array(
+      'tags' => 'datasource_id=' . $this->getId()
+    ));
   }
 
 

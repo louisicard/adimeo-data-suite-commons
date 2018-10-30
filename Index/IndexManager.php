@@ -361,7 +361,7 @@ class IndexManager
     }
   }
 
-  public function listObjects($type, SecurityContext $context = NULL, $from = 0, $size = 10000, $order = 'asc') {
+  public function listObjects($type, SecurityContext $context = NULL, $from = 0, $size = 10000, $order = 'asc', $criterias) {
     $query = array(
       'query' => array(
         'bool' => array(
@@ -386,6 +386,13 @@ class IndexManager
         'name.raw' => $order
       )
     );
+    foreach($criterias as $criteriaName => $criteriaValue) {
+      $query['query']['bool']['should'][0]['bool']['must'][] = array(
+        'term' => array(
+          $criteriaName => $criteriaValue
+        )
+      );
+    }
     if($context != null && !$context->isAdmin()) {
       $restricted = array(
         'datasource' => 'datasources',
