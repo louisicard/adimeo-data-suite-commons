@@ -3,7 +3,7 @@
 namespace AdimeoDataSuite\Model;
 
 
-class Autopromote extends PersistentObject
+class Autopromote
 {
   /** @var  string */
   private $id;
@@ -171,18 +171,6 @@ class Autopromote extends PersistentObject
   public function setAnalyzer($analyzer)
   {
     $this->analyzer = $analyzer;
-  }
-
-  function getType()
-  {
-    return 'autopromote';
-  }
-
-  public function getTags()
-  {
-    return array(
-      'index_name=' . $this->getIndex()
-    );
   }
 
 }

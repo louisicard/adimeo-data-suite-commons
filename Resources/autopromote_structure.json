@@ -1,0 +1,23 @@
+{
+  "mapping" : {
+    "data": {
+      "type": "text",
+      "store": true
+    },
+    "name": {
+      "type": "text",
+      "store": true,
+      "fields": {
+        "raw": {
+          "type": "keyword",
+          "store": true
+        }
+      },
+      "analyzer": "case_insensitive_sort"
+    },
+    "keywords": {
+      "type": "text",
+      "store": true
+    }
+  }
+}

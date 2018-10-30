@@ -532,4 +532,15 @@ class IndexManager
     }
   }
 
+  public function createAutopromoteIndex($fromIndex, $analyzer) {
+    $index = $this->getIndex($fromIndex);
+    $indexName = '.ads_autopromote_' . str_replace('.', '', $fromIndex);
+    $this->createIndex('.ads_autopromote_' . str_replace('.', '', $fromIndex), array(
+      'analysis' => $index['settings']['analysis']
+    ));
+    $json = json_decode(file_get_contents(__DIR__ . '/../Resources/autopromote_structure.json'), TRUE);
+    $json['mapping']['keywords']['analyzer'] = $analyzer;
+    $this->putMapping($indexName, 'autopromote', $json['mapping']);
+  }
+
 }
