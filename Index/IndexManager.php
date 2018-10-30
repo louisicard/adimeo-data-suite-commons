@@ -6,6 +6,7 @@ use AdimeoDataSuite\Model\PersistentObject;
 use AdimeoDataSuite\Model\SecurityContext;
 use Elasticsearch\Client;
 use Elasticsearch\ClientBuilder;
+use Elasticsearch\Common\Exceptions\Missing404Exception;
 
 class IndexManager
 {
@@ -87,7 +88,12 @@ class IndexManager
   }
 
   public function getIndex($indexName) {
-    return $this->client->indices()->getSettings(array('index' => $indexName));
+    try {
+      return $this->client->indices()->getSettings(array('index' => $indexName));
+    }
+    catch(Missing404Exception $ex) {
+      return null;
+    }
   }
 
   public function createIndex($indexName, $settings) {
@@ -116,6 +122,9 @@ class IndexManager
 
   function updateIndex($indexName, $settings)
   {
+    $this->client->indices()->close(array(
+      'index' => $indexName
+    ));
     if (isset($settings['creation_date']))
       unset($settings['creation_date']);
     if (isset($settings['version']))
@@ -124,18 +133,28 @@ class IndexManager
       unset($settings['uuid']);
     if (isset($settings['number_of_shards']))
       unset($settings['number_of_shards']);
-    if (isset($settings['analysis']))
-      unset($settings['analysis']);
+    if (isset($settings['number_of_replicas']))
+      unset($settings['number_of_replicas']);
+    //if (isset($settings['analysis']))
+    //  unset($settings['analysis']);
     if (isset($settings['provided_name']))
       unset($settings['provided_name']);
     if (count($settings) > 0) {
-      $this->client->indices()->putSettings(array(
-        'index' => $indexName,
-        'body' => array(
-          'settings' => $settings,
-        ),
-      ));
+      try {
+        $this->client->indices()->putSettings(array(
+          'index' => $indexName,
+          'body' => array(
+            'settings' => $settings,
+          ),
+        ));
+      }
+      catch(\Exception $ex) {
+
+      }
     }
+    $this->client->indices()->open(array(
+      'index' => $indexName
+    ));
   }
 
   public function deleteIndex($indexName) {
@@ -511,16 +530,6 @@ class IndexManager
       $params['body'] = $bulkString;
       $this->client->bulk($params);
     }
-  }
-
-  public function mappingExists($indexName, $mappingName){
-    $mappings = $this->getIndicesInfo(NULL)[$indexName]['mappings'];
-    foreach($mappings as $mapping){
-      if($mapping['name'] == $mappingName){
-        return true;
-      }
-    }
-    return false;
   }
 
 }
