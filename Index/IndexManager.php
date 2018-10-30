@@ -574,4 +574,76 @@ class IndexManager
     $this->client->indices()->flush();
   }
 
+  public function listAutopromotes(SecurityContext $securityContext = null) {
+    $params = array(
+      'from' => 0,
+      'size' => 10000,
+      'body' => array(
+        'query' => array(
+          'match_all' => array(
+            'boost' => 1
+          )
+        )
+      )
+    );
+    if($securityContext == null || $securityContext->isAdmin()) {
+      $params['index'] = '.ads_autopromote_*';
+    }
+    else {
+      $indexRestrictions = $securityContext->getRestrictions()['indexes'];
+      if(empty($indexRestrictions)) {
+        return [];
+      }
+      else {
+        $restrictedIndexes = [];
+        foreach($indexRestrictions as $ir) {
+          if($this->getIndex($this->getAutopromoteIndexName($ir)) != null)
+            $restrictedIndexes[] = $this->getAutopromoteIndexName($ir);
+        }
+        if(empty($restrictedIndexes))
+          return [];
+        $params['index'] = implode(',', $restrictedIndexes);
+      }
+    }
+    $r = $this->client->search($params);
+    $autopromotes = [];
+    foreach($r['hits']['hits'] as $hit) {
+      $autopromote = unserialize($hit['_source']['data']);
+      $autopromote->setId($hit['_id']);
+      $autopromotes[] = $autopromote;
+    }
+    return $autopromotes;
+  }
+
+  public function getAutopromote($id, $index) {
+    $params = array(
+      'from' => 0,
+      'size' => 1,
+      'body' => array(
+        'query' => array(
+          'ids' => array(
+            'values' => [$id]
+          )
+        )
+      )
+    );
+    $params['index'] = $this->getAutopromoteIndexName($index);
+    $r = $this->client->search($params);
+    if(isset($r['hits']['hits'][0])) {
+      $autopromote = unserialize($r['hits']['hits'][0]['_source']['data']);
+      $autopromote->setId($r['hits']['hits'][0]['_id']);
+      return $autopromote;
+    }
+    return NULL;
+  }
+
+  public function deleteAutopromote($id, $index) {
+    $this->client->delete(array(
+      'index' => $this->getAutopromoteIndexName($index),
+      'type' => 'autopromote',
+      'id' => $id
+    ));
+    $this->client->indices()->flush();
+  }
+
 }
