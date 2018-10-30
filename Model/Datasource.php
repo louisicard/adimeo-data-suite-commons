@@ -7,6 +7,7 @@ abstract class Datasource extends PersistentObject
 {
   private $id;
   private $settings;
+  private $hasBatchExecution;
 
   final function getId()
   {
@@ -32,6 +33,22 @@ abstract class Datasource extends PersistentObject
   public function setSettings($settings)
   {
     $this->settings = $settings;
+  }
+
+  /**
+   * @return boolean
+   */
+  public function hasBatchExecution()
+  {
+    return $this->hasBatchExecution;
+  }
+
+  /**
+   * @param boolean $hasBatchExecution
+   */
+  public function setHasBatchExecution($hasBatchExecution)
+  {
+    $this->hasBatchExecution = $hasBatchExecution;
   }
 
   /**
