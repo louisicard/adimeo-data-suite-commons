@@ -471,6 +471,27 @@ class IndexManager
         }
         $query['query']['bool']['should'][0]['bool']['must'][] = $bqQuery;
       }
+      if($type == 'saved_query') {
+        $sqQuery = array(
+          'bool' => array(
+            'must' => array(
+              array(
+                'bool' => array(
+                  'should' => []
+                )
+              )
+            )
+          )
+        );
+        foreach($context->getRestrictions()['indexes'] as $sqIndexes) {
+          $sqQuery['bool']['must'][0]['bool']['should'][] = array(
+            'term' => array(
+              'tags' => 'index_name=' . $sqIndexes
+            )
+          );
+        }
+        $query['query']['bool']['should'][0]['bool']['must'][] = $sqQuery;
+      }
       $query['query']['bool']['should'][] = array(
         'bool' => array(
           'must' => array(
