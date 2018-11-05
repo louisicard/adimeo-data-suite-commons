@@ -120,8 +120,7 @@ abstract class Datasource extends PersistentObject
           //$procFilter->setOutput($this->getOutput());
           $filterData = array();
           foreach ($filter['settings'] as $k => $v) {
-            //TODO: deal with parameters
-            $filterData['setting_' . $k] = $v;//Parameter::injectParameters($v);
+            $filterData['setting_' . $k] = $this->injectParameters($v);
           }
           foreach ($filter['arguments'] as $arg) {
             $filterData['arg_' . $arg['key']] = $arg['value'];
@@ -295,6 +294,9 @@ abstract class Datasource extends PersistentObject
   /** @var Processor[] */
   private $execProcessors = [];
 
+  /** @var Parameter[]  */
+  private $parameters = [];
+
   /**
    * @var OutputManager
    */
@@ -306,6 +308,7 @@ abstract class Datasource extends PersistentObject
     $this->execProcessors = $this->execIndexManager->listObjects('processor', null, 0, 10000, 'asc', array(
       'tags' => 'datasource_id=' . $this->getId()
     ));
+    $this->parameters = $indexManager->listObjects('parameter');
   }
 
   /**
@@ -329,8 +332,12 @@ abstract class Datasource extends PersistentObject
     if(isset($matches['parameter'])) {
       foreach($matches['parameter'] as $param) {
         $name = trim($param, '%');
-        //TODO: Parameters fetching isn't working with the proper ID
-        $parameter = $this->execIndexManager->findObject('parameter', $name);
+        $parameter = null;
+        foreach($this->parameters as $p) {
+          if($p->getName() == $name) {
+            $parameter = $p;
+          }
+        }
         if($parameter != null) {
           $string = str_replace('%' . $name . '%', $parameter->getValue(), $string);
         }
