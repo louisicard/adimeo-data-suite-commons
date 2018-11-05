@@ -92,6 +92,15 @@ abstract class Datasource extends PersistentObject
    */
   abstract function execute($args);
 
+  final function startExecution($args) {
+    $this->execute($args);
+
+    //We empty the batch stack at the end of execution if there are documents left to index
+    if($this->hasBatchExecution()) {
+      $this->emptyBatchStack();
+    }
+  }
+
   final function index($data, $debug = false) {
     $startTime = round(microtime(true) * 1000);
     $debugTimeStat = [];
