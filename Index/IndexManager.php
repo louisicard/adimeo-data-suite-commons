@@ -397,9 +397,7 @@ class IndexManager
     if($context != null && !$context->isAdmin()) {
       $restricted = array(
         'datasource' => 'datasources',
-        'matching_list' => 'matchingLists',
-        //TODO: Potential bug = multiple parameters can share the same name in different contexts which could lead to major problems when executing datasources outside context
-        'parameter' => 'parameters'
+        'matching_list' => 'matchingLists'
       );
       foreach($restricted as $restrictionType => $restriction) {
         if ($type == $restrictionType) {
