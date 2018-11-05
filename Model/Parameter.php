@@ -12,7 +12,6 @@ namespace AdimeoDataSuite\Model;
 class Parameter extends PersistentObject
 {
 
-  private $id;
   /** @var  string */
   private $name;
   /** @var  string */
@@ -63,12 +62,12 @@ class Parameter extends PersistentObject
 
   function getId()
   {
-    return $this->id;
+    return $this->name;
   }
 
   function setId($id)
   {
-    $this->id = $id;
+    $this->name = $id;
   }
 
   function getType()
