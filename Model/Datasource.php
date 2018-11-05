@@ -4,6 +4,7 @@ namespace AdimeoDataSuite\Model;
 
 
 use AdimeoDataSuite\Index\IndexManager;
+use AdimeoDataSuite\ProcessorFilter\SmartMapper;
 
 abstract class Datasource extends PersistentObject
 {
@@ -89,9 +90,9 @@ abstract class Datasource extends PersistentObject
   /**
    * @param array $args
    */
-  abstract function execute($args, OutputManager $output);
+  abstract function execute($args);
 
-  final function index($data) {
+  final function index($data, $debug = false) {
     $startTime = round(microtime(true) * 1000);
     $debugTimeStat = [];
     try {
@@ -110,7 +111,8 @@ abstract class Datasource extends PersistentObject
           //$procFilter->setOutput($this->getOutput());
           $filterData = array();
           foreach ($filter['settings'] as $k => $v) {
-            $filterData['setting_' . $k] = Parameter::injectParameters($v);
+            //TODO: deal with parameters
+            //$filterData['setting_' . $k] = Parameter::injectParameters($v);
           }
           foreach ($filter['arguments'] as $arg) {
             $filterData['arg_' . $arg['key']] = $arg['value'];
@@ -121,8 +123,6 @@ abstract class Datasource extends PersistentObject
           $procFilter->setAutoStriptags($filter['autoStriptags']);
           $procFilter->setIsHTML($filter['isHTML']);
           $filterOutput = $procFilter->execute($data);
-          //if($filter['id'] == 36840)
-          //  $indexManager->log('debug', 'URL : ' . $data['datasource.url'], $filterOutput);
           if (empty($data)) {
             break;
           }
@@ -215,13 +215,12 @@ abstract class Datasource extends PersistentObject
           $mappingName = $target_r[1];
           $indexStartTime = round(microtime(true) * 1000);
           $this->indexDocument($indexName, $mappingName, $to_index);
-          if ($debug && !$this->isHasBatchExecution()) {
+          if ($debug && !$this->hasBatchExecution()) {
             try {
               $debugTimeStat['indexing'] = round(microtime(true) * 1000) - $indexStartTime;
               $debugTimeStat['global'] = round(microtime(true) * 1000) - $startTime;
-              IndexManager::getInstance()->log('debug', 'Timing info', $debugTimeStat, $this);
-              IndexManager::getInstance()->log('debug', 'Indexing document from datasource "' . $this->getName() . '"', $to_index, $this);
-            } catch (Exception $ex) {
+              //IndexManager::getInstance()->log('debug', 'Timing info', $debugTimeStat, $this);
+              //IndexManager::getInstance()->log('debug', 'Indexing document from datasource "' . $this->getName() . '"', $to_index, $this);
 
             } catch (\Exception $ex2) {
 
@@ -239,28 +238,46 @@ abstract class Datasource extends PersistentObject
         unset($data);
       if(isset($to_index))
         unset($to_index);
-    } catch (Exception $ex) {
-      //var_dump($ex->getMessage());
-      IndexManager::getInstance()->log('error', 'Exception occured while indexing document from datasource "' . $this->getName() . '"', array(
-        'Exception type' => get_class($ex),
-        'Message' => $ex->getMessage(),
-        'File' => $ex->getFile(),
-        'Line' => $ex->getLine(),
-        'Data in process' => isset($data) ? $this->truncateArray($data) : array(),
-      ), $this);
-    } catch (\Exception $ex2) {
-      //var_dump($ex2);
-      IndexManager::getInstance()->log('error', 'Exception occured while indexing document from datasource "' . $this->getName() . '"', array(
-        'Exception type' => get_class($ex2),
-        'Message' => $ex2->getMessage(),
-        'File' => $ex2->getFile(),
-        'Line' => $ex2->getLine(),
-        'Data in process' => isset($data) ? $this->truncateArray($data) : array(),
-      ), $this);
+    } catch (\Exception $ex) {
+//      IndexManager::getInstance()->log('error', 'Exception occured while indexing document from datasource "' . $this->getName() . '"', array(
+//        'Exception type' => get_class($ex2),
+//        'Message' => $ex2->getMessage(),
+//        'File' => $ex2->getFile(),
+//        'Line' => $ex2->getLine(),
+//        'Data in process' => isset($data) ? $this->truncateArray($data) : array(),
+//      ), $this);
     }
 
     gc_enable();
     gc_collect_cycles();
+  }
+
+  private function indexDocument($indexName, $mappingName, $to_index){
+    if($this->hasBatchExecution()){
+      $this->batchStack[] = array(
+        'indexName' => $indexName,
+        'mappingName' => $mappingName,
+        'body' => $to_index,
+      );
+      if(count($this->batchStack) >= static::BATCH_STACK_SIZE){
+        $this->emptyBatchStack();
+      }
+    }
+    else{
+      $this->execIndexManager->indexDocument($indexName, $mappingName, $to_index);
+    }
+  }
+
+  private $batchStack = [];
+  const BATCH_STACK_SIZE = 500;
+
+  private function emptyBatchStack(){
+    $this->execIndexManager->bulkIndex($this->batchStack);
+    unset($this->batchStack);
+    if ($this->getOutputManager() != null) {
+      $this->getOutputManager()->writeln('Indexing documents in batch stack (stack size is ' . static::BATCH_STACK_SIZE . ')');
+    }
+    $this->batchStack = [];
   }
 
   /** @var IndexManager */
@@ -269,11 +286,33 @@ abstract class Datasource extends PersistentObject
   /** @var Processor[] */
   private $execProcessors = [];
 
-  final function initForExecution(IndexManager $indexManager) {
+  /**
+   * @var OutputManager
+   */
+  private $outputManager;
+
+  final function initForExecution(IndexManager $indexManager, OutputManager $output) {
     $this->execIndexManager = $indexManager;
+    $this->outputManager = $output;
     $this->execProcessors = $this->execIndexManager->listObjects('processor', null, 0, 10000, 'asc', array(
       'tags' => 'datasource_id=' . $this->getId()
     ));
+  }
+
+  /**
+   * @return OutputManager
+   */
+  public function getOutputManager()
+  {
+    return $this->outputManager;
+  }
+
+  /**
+   * @param OutputManager $outputManager
+   */
+  public function setOutputManager($outputManager)
+  {
+    $this->outputManager = $outputManager;
   }
 
   final function injectParameters($string) {
@@ -281,13 +320,67 @@ abstract class Datasource extends PersistentObject
     if(isset($matches['parameter'])) {
       foreach($matches['parameter'] as $param) {
         $name = trim($param, '%');
-        $parameter = $this->execIndexManager->findObject($name);
+        //TODO: Parameters fetching isn't working with the proper ID
+        $parameter = $this->execIndexManager->findObject('parameter', $name);
         if($parameter != null) {
           $string = str_replace('%' . $name . '%', $parameter->getValue(), $string);
         }
       }
     }
     return $string;
+  }
+
+  protected function implode($separator, $input) {
+    if(is_array($input))
+      return implode($separator, $input);
+    else
+      return $input;
+  }
+
+  protected function extractTextFromHTML($html) {
+    $html = str_replace('&nbsp;', ' ', $html);
+    $html = str_replace('&rsquo;', ' ', $html);
+    try {
+      $tidy = tidy_parse_string($html, array(), 'utf8');
+      $body = tidy_get_body($tidy);
+      if($body != null)
+        $html = $body->value;
+    } catch (\Exception $ex) {
+
+    }
+    $html = html_entity_decode($html, ENT_COMPAT | ENT_HTML401, 'utf-8');
+    $html = trim(preg_replace('#<[^>]+>#', ' ', $html));
+    $html_no_multiple_spaces = trim(preg_replace('!\s+!', ' ', $html));
+    if(preg_match('!\s+!', $html) && !empty($html_no_multiple_spaces)){
+      $html = $html_no_multiple_spaces;
+    }
+    $clean_html = html_entity_decode(trim(htmlentities($html, null, 'utf-8')));
+    $r = empty($clean_html) ? $html : $clean_html;
+
+    return $r;
+  }
+
+  protected function extractTextFromXML($xml) {
+    return strip_tags($xml);
+  }
+
+  private function cleanNonUtf8Chars($text){
+    if($text == null || empty($text)){
+      return $text;
+    }
+    $regex = <<<'END'
+/
+  (
+    (?: [\x00-\x7F]                 # single-byte sequences   0xxxxxxx
+    |   [\xC0-\xDF][\x80-\xBF]      # double-byte sequences   110xxxxx 10xxxxxx
+    |   [\xE0-\xEF][\x80-\xBF]{2}   # triple-byte sequences   1110xxxx 10xxxxxx * 2
+    |   [\xF0-\xF7][\x80-\xBF]{3}   # quadruple-byte sequence 11110xxx 10xxxxxx * 3 
+    ){1,100}                        # ...one or more times
+  )
+| .                                 # anything else
+/x
+END;
+    return preg_replace($regex, '$1', $text);
   }
 
 }

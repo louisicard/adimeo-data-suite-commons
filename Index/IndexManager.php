@@ -8,6 +8,7 @@ use AdimeoDataSuite\Model\SecurityContext;
 use Elasticsearch\Client;
 use Elasticsearch\ClientBuilder;
 use Elasticsearch\Common\Exceptions\Missing404Exception;
+use Elasticsearch\Common\Exceptions\NoNodesAvailableException;
 
 class IndexManager
 {
@@ -696,6 +697,88 @@ class IndexManager
       'id' => $id
     ));
     $this->client->indices()->flush();
+  }
+
+  public function bulkIndex($items)
+  {
+    $bulkString = '';
+    foreach ($items as $item) {
+      $data = array('index' => array('_index' => $item['indexName'], '_type' => $item['mappingName']));
+      if (isset($item['body']['_id'])) {
+        $data['index']['_id'] = $item['body']['_id'];
+        unset($item['body']['_id']);
+      }
+      $bulkString .= json_encode($data) . "\n";
+      $bulkString .= json_encode($item['body']) . "\n";
+    }
+    if (count($items) > 0) {
+      $params['index'] = $items[0]['indexName'];
+      $params['type'] = $items[0]['mappingName'];
+      $params['body'] = $bulkString;
+
+      $tries = 0;
+      $retry = true;
+      while ($tries == 0 || $retry) {
+        try {
+          $this->client->bulk($params);
+          $retry = false;
+        } catch (NoNodesAvailableException $ex) {
+          print get_class($this) . ' >> NoNodesAvailableException has been caught (' . $ex->getMessage() . ')' . PHP_EOL;
+          if ($tries > 20) {
+            $retry = false;
+            print get_class($this) . ' >> This is over, I choose to die.' . PHP_EOL;
+            return; //Kill the datasource
+          } else {
+            print get_class($this) . ' >> Retrying in 1 second...' . PHP_EOL;
+            sleep(1); //Sleep for 1 second
+          }
+        } finally {
+          $tries++;
+        }
+      }
+    }
+  }
+
+  public function indexDocument($indexName, $mappingName, $document, $flush = true)
+  {
+    $id = null;
+    if (isset($document['_id'])) {
+      $id = $document['_id'];
+      unset($document['_id']);
+    }
+    $params = array(
+      'index' => $indexName,
+      'type' => $mappingName,
+      'body' => $document,
+    );
+    if ($id != null) {
+      $params['id'] = $id;
+    }
+    $tries = 0;
+    $retry = true;
+    while ($tries == 0 || $retry) {
+      try {
+        $r = $this->client->index($params);
+        if ($flush) {
+          $this->client->indices()->flush();
+        }
+        $retry = false;
+      } catch (NoNodesAvailableException $ex) {
+        print get_class($this) . ' >> NoNodesAvailableException has been caught (' . $ex->getMessage() . ')' . PHP_EOL;
+        if ($tries > 20) {
+          $retry = false;
+          print get_class($this) . ' >> This is over, I choose to die.' . PHP_EOL;
+          return null; //Kill the datasource
+        } else {
+          print get_class($this) . ' >> Retrying in 1 second...' . PHP_EOL;
+          sleep(1); //Sleep for 1 second
+        }
+      } finally {
+        $tries++;
+      }
+    }
+    unset($params);
+    return isset($r) ? $r : null;
   }
 
 }
