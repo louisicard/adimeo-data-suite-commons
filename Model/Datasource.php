@@ -121,7 +121,7 @@ abstract class Datasource extends PersistentObject
           $filterData = array();
           foreach ($filter['settings'] as $k => $v) {
             //TODO: deal with parameters
-            //$filterData['setting_' . $k] = Parameter::injectParameters($v);
+            $filterData['setting_' . $k] = $v;//Parameter::injectParameters($v);
           }
           foreach ($filter['arguments'] as $arg) {
             $filterData['arg_' . $arg['key']] = $arg['value'];
@@ -131,8 +131,8 @@ abstract class Datasource extends PersistentObject
           $procFilter->setAutoImplodeSeparator($filter['autoImplodeSeparator']);
           $procFilter->setAutoStriptags($filter['autoStriptags']);
           $procFilter->setIsHTML($filter['isHTML']);
-          $filterOutput = $procFilter->execute($data);
-          if (empty($data)) {
+          $filterOutput = $procFilter->execute($document);
+          if (empty($document)) {
             break;
           }
           if(get_class($procFilter) == SmartMapper::class){
@@ -170,7 +170,7 @@ abstract class Datasource extends PersistentObject
               }
             }
             if ($v != null) {
-              $data['filter_' . $filter['id'] . '.' . $k] = $v;
+              $document['filter_' . $filter['id'] . '.' . $k] = $v;
             }
             unset($v);
           }
@@ -182,24 +182,24 @@ abstract class Datasource extends PersistentObject
           unset($filterOutput);
           unset($filterData);
         }
-        if (!empty($data)) {
+        if (!empty($document)) {
           $to_index = array();
           foreach ($definition['mapping'] as $k => $input) {
             if(strpos($input, '.smart_array') === FALSE) {
-              if (isset($data[$input])) {
-                if (is_array($data[$input]) && count($data[$input]) == 1) {
-                  $to_index[$k] = $data[$input][0];
+              if (isset($document[$input])) {
+                if (is_array($document[$input]) && count($document[$input]) == 1) {
+                  $to_index[$k] = $document[$input][0];
                 } else {
-                  $to_index[$k] = $data[$input];
+                  $to_index[$k] = $document[$input];
                 }
               }
             }
             else{
-              if (isset($data[$input][$k])) {
-                if (is_array($data[$input][$k]) && count($data[$input][$k]) == 1) {
-                  $to_index[$k] = $data[$input][$k][0];
+              if (isset($document[$input][$k])) {
+                if (is_array($document[$input][$k]) && count($document[$input][$k]) == 1) {
+                  $to_index[$k] = $document[$input][$k][0];
                 } else {
-                  $to_index[$k] = $data[$input][$k];
+                  $to_index[$k] = $document[$input][$k];
                 }
               }
             }
@@ -243,8 +243,8 @@ abstract class Datasource extends PersistentObject
         unset($definition);
       if(isset($processors))
         unset($processors);
-      if(isset($data))
-        unset($data);
+      if(isset($document))
+        unset($document);
       if(isset($to_index))
         unset($to_index);
     } catch (\Exception $ex) {
@@ -253,7 +253,7 @@ abstract class Datasource extends PersistentObject
 //        'Message' => $ex2->getMessage(),
 //        'File' => $ex2->getFile(),
 //        'Line' => $ex2->getLine(),
-//        'Data in process' => isset($data) ? $this->truncateArray($data) : array(),
+//        'Data in process' => isset($document) ? $this->truncateArray($document) : array(),
 //      ), $this);
     }
 
