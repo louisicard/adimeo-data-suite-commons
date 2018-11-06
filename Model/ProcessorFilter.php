@@ -2,9 +2,6 @@
 
 namespace AdimeoDataSuite\Model;
 
-
-use AdimeoDataSuite\Index\IndexManager;
-
 abstract class ProcessorFilter
 {
 
@@ -98,7 +95,7 @@ abstract class ProcessorFilter
    */
   abstract function getArguments();
 
-  abstract function execute(&$document);
+  abstract function execute(&$document, Datasource $datasource);
 
   protected function getArgumentValue($argName, $document) {
     foreach ($this->getArgumentsData() as $arg) {
@@ -146,21 +143,5 @@ abstract class ProcessorFilter
 
   function setIsHTML($isHTML) {
     $this->isHTML = $isHTML;
-  }
-
-  /**
-   * @var IndexManager
-   */
-  private $execIndexManager = null;
-
-  final function initForExecution(IndexManager $indexManager) {
-    $this->execIndexManager = $indexManager;
-  }
-
-  /**
-   * @return IndexManager
-   */
-  final function getIndexManager(){
-    return $this->execIndexManager;
   }
 }

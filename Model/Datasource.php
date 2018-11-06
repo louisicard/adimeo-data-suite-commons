@@ -130,8 +130,7 @@ abstract class Datasource extends PersistentObject
           $procFilter->setAutoImplodeSeparator($filter['autoImplodeSeparator']);
           $procFilter->setAutoStriptags($filter['autoStriptags']);
           $procFilter->setIsHTML($filter['isHTML']);
-          $procFilter->initForExecution($this->execIndexManager);
-          $filterOutput = $procFilter->execute($document);
+          $filterOutput = $procFilter->execute($document, $this);
           if (empty($document)) {
             break;
           }
@@ -398,6 +397,18 @@ abstract class Datasource extends PersistentObject
 /x
 END;
     return preg_replace($regex, '$1', $text);
+  }
+
+  /**
+   * @var MatchingList[]
+   */
+  private $matchingLists = [];
+
+  final function getMatchingList($id) {
+    if(!isset($this->matchingLists[$id])) {
+      $this->matchingLists[$id] = $this->execIndexManager->findObject('matching_list', $id);
+    }
+    return $this->matchingLists[$id];
   }
 
 
