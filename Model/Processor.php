@@ -155,7 +155,7 @@ class Processor extends PersistentObject
       $mappingName = explode('.', $this->getTarget())[1];
     }
     $data['index'] = $indexManager->getIndex($indexName);
-    $data['mapping'] = $indexManager->getMapping($indexName, $mappingName);
+    $data['mapping'][$mappingName] = $indexManager->getMapping($indexName, $mappingName);
     $data['datasource'] = $indexManager->findObject('datasource', $this->getDatasourceId())->export($indexManager);
     if($this->targetSiblings != null && is_array($this->targetSiblings)) {
       foreach ($this->targetSiblings as $sibling) {
