@@ -167,9 +167,48 @@ class Processor extends PersistentObject
     return json_encode($data);
   }
 
-  function import($data, IndexManager $indexManager, $override = false)
+  static function import($data, IndexManager $indexManager, $override = false)
   {
+    $data = json_decode($data, true);
 
+    if(!isset($data['index']))
+      throw new \Exception('Invalid data to import');
+
+    $indexName = array_keys($data['index'])[0];
+    $mappingName = array_keys($data['mapping'])[0];
+
+    //Index
+    if($override) {
+      $indexManager->deleteIndex($indexName);
+      $indexManager->createIndex($indexName, $data['index'][$indexName]['settings']['index']);
+    }
+    else {
+      $indexManager->updateIndex($indexName, $data['index'][$indexName]['settings']['index']);
+    }
+
+    //Mapping
+    $indexManager->putMapping($indexName, $mappingName, $data['mapping'][$mappingName]['properties'], isset($data['mapping'][$mappingName]['dynamic_templates']) ? $data['mapping'][$mappingName]['dynamic_templates'] : NULL);
+
+    //Datasource
+    /** @var Datasource $datasource */
+    $datasource = PersistentObject::unserialize($data['datasource']);
+    $indexManager->persistObject($datasource);
+
+    //Sibligings
+    if(isset($data['siblings'])) {
+      foreach($data['siblings'] as $sibling) {
+        /** @var Datasource $siblingDatasource */
+        $siblingDatasource = PersistentObject::unserialize($sibling);
+        $indexManager->persistObject($siblingDatasource);
+      }
+    }
+
+    //Processor
+    /** @var Processor $processor */
+    $processor = PersistentObject::unserialize($data['processor']);
+    $indexManager->persistObject($processor);
+
+    return $processor;
   }
 
 

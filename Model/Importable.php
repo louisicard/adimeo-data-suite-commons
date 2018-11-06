@@ -11,7 +11,8 @@ interface Importable
    * @param string $data
    * @param IndexManager $indexManager
    * @param boolean $override
+   * @return PersistentObject
    */
-  function import($data, IndexManager $indexManager, $override = false);
+  static function import($data, IndexManager $indexManager, $override = false);
 
 }
