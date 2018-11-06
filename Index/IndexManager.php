@@ -358,7 +358,7 @@ class IndexManager
     );
     $r = $this->search(static::APP_INDEX_NAME, $query);
     if(isset($r['hits']['hits'][0])) {
-      $object = unserialize($r['hits']['hits'][0]['_source']['data']);
+      $object = PersistentObject::unserialize($r['hits']['hits'][0]['_source']['data']);
       $object->setId($r['hits']['hits'][0]['_id']);
       return $object;
     }
@@ -538,7 +538,7 @@ class IndexManager
     $r = $this->search(static::APP_INDEX_NAME, $query);
     $objects = [];
     foreach($r['hits']['hits'] as $hit) {
-      $object = unserialize($hit['_source']['data']);
+      $object = PersistentObject::unserialize($hit['_source']['data']);
       $object->setId($hit['_id']);
       $objects[] = $object;
     }

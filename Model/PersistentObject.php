@@ -44,13 +44,14 @@ abstract class PersistentObject implements Importable, Exportable
 
   function export(IndexManager $indexManager)
   {
-    return serialize($this);
+    return json_encode(array('data' => $this->serialize()));
   }
 
   static function import($data, IndexManager $indexManager, $override = false)
   {
+    $data = json_decode($data, true);
     /** @var PersistentObject $obj */
-    $obj = self::unserialize($data);
+    $obj = self::unserialize($data['data']);
     if($override)
       $indexManager->deleteObject($obj->getId());
     $indexManager->persistObject($obj);
