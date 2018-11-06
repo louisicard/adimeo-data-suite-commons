@@ -3,6 +3,8 @@
 namespace AdimeoDataSuite\Model;
 
 
+use AdimeoDataSuite\Index\IndexManager;
+
 abstract class ProcessorFilter
 {
 
@@ -144,5 +146,21 @@ abstract class ProcessorFilter
 
   function setIsHTML($isHTML) {
     $this->isHTML = $isHTML;
+  }
+
+  /**
+   * @var IndexManager
+   */
+  private $execIndexManager = null;
+
+  final function initForExecution(IndexManager $indexManager) {
+    $this->execIndexManager = $indexManager;
+  }
+
+  /**
+   * @return IndexManager
+   */
+  final function getIndexManager(){
+    return $this->execIndexManager;
   }
 }
