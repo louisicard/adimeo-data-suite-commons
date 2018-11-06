@@ -130,6 +130,7 @@ abstract class Datasource extends PersistentObject
           $procFilter->setAutoImplodeSeparator($filter['autoImplodeSeparator']);
           $procFilter->setAutoStriptags($filter['autoStriptags']);
           $procFilter->setIsHTML($filter['isHTML']);
+          $procFilter->initForExecution($this->execIndexManager);
           $filterOutput = $procFilter->execute($document);
           if (empty($document)) {
             break;
