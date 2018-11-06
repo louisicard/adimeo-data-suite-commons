@@ -10,7 +10,8 @@ interface Importable
   /**
    * @param string $data
    * @param IndexManager $indexManager
+   * @param boolean $override
    */
-  function import($data, IndexManager $indexManager);
+  function import($data, IndexManager $indexManager, $override = false);
 
 }

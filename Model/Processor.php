@@ -148,22 +148,28 @@ class Processor extends PersistentObject
     $data = [];
     if(strpos($this->getTarget(), '.') === 0) {
       $indexName = '.' . explode('.', $this->getTarget())[1];
+      $mappingName = explode('.', $this->getTarget())[2];
     }
     else {
       $indexName = explode('.', $this->getTarget())[0];
+      $mappingName = explode('.', $this->getTarget())[1];
     }
     $data['index'] = $indexManager->getIndex($indexName);
+    $data['mapping'] = $indexManager->getMapping($indexName, $mappingName);
     $data['datasource'] = $indexManager->findObject('datasource', $this->getDatasourceId())->export($indexManager);
-    foreach($this->targetSiblings as $sibling) {
-      $data['siblings'] = $indexManager->findObject('datasource', $sibling)->export($indexManager);
+    if($this->targetSiblings != null && is_array($this->targetSiblings)) {
+      foreach ($this->targetSiblings as $sibling) {
+        $data['siblings'][] = $indexManager->findObject('datasource', $sibling)->export($indexManager);
+      }
     }
     $data['processor'] = self::serialize();
+    // TODO: Deal with matching lists
     return json_encode($data);
   }
 
-  function import($data, IndexManager $indexManager)
+  function import($data, IndexManager $indexManager, $override = false)
   {
-    // TODO: Implement import() method.
+
   }
 
 
