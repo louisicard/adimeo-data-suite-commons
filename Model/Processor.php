@@ -186,16 +186,12 @@ class Processor extends PersistentObject
     $indexManager->putMapping($indexName, $mappingName, $data['mapping'][$mappingName]['properties'], isset($data['mapping'][$mappingName]['dynamic_templates']) ? $data['mapping'][$mappingName]['dynamic_templates'] : NULL);
 
     //Datasource
-    /** @var Datasource $datasource */
-    $datasource = PersistentObject::unserialize($data['datasource']);
-    $indexManager->persistObject($datasource);
+    PersistentObject::import($data['datasource'], $indexManager);
 
     //Sibligings
     if(isset($data['siblings'])) {
       foreach($data['siblings'] as $sibling) {
-        /** @var Datasource $siblingDatasource */
-        $siblingDatasource = PersistentObject::unserialize($sibling);
-        $indexManager->persistObject($siblingDatasource);
+        PersistentObject::import($sibling, $indexManager);
       }
     }
 
