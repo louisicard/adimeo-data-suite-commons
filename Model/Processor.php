@@ -170,10 +170,6 @@ class Processor extends PersistentObject
   static function import($data, IndexManager $indexManager, $override = false)
   {
     $data = json_decode($data, true);
-
-    if(!isset($data['index']))
-      throw new \Exception('Invalid data to import');
-
     $indexName = array_keys($data['index'])[0];
     $mappingName = array_keys($data['mapping'])[0];
 
