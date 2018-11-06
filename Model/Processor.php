@@ -3,6 +3,8 @@
 namespace AdimeoDataSuite\Model;
 
 
+use AdimeoDataSuite\Index\IndexManager;
+
 class Processor extends PersistentObject
 {
   private $id;
@@ -140,5 +142,29 @@ class Processor extends PersistentObject
       'index_name=' . $indexName
     );
   }
+
+  function export(IndexManager $indexManager)
+  {
+    $data = [];
+    if(strpos($this->getTarget(), '.') === 0) {
+      $indexName = '.' . explode('.', $this->getTarget())[1];
+    }
+    else {
+      $indexName = explode('.', $this->getTarget())[0];
+    }
+    $data['index'] = $indexManager->getIndex($indexName);
+    $data['datasource'] = $indexManager->findObject('datasource', $this->getDatasourceId())->export($indexManager);
+    foreach($this->targetSiblings as $sibling) {
+      $data['siblings'] = $indexManager->findObject('datasource', $sibling)->export($indexManager);
+    }
+    $data['processor'] = self::serialize();
+    return json_encode($data);
+  }
+
+  function import($data, IndexManager $indexManager)
+  {
+    // TODO: Implement import() method.
+  }
+
 
 }

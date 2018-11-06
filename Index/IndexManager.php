@@ -332,6 +332,11 @@ class IndexManager
     $this->client->indices()->flush();
   }
 
+  /**
+   * @param string $type
+   * @param string $id
+   * @return PersistentObject
+   */
   public function findObject($type, $id) {
     $query = array(
       'query' => array(
@@ -362,6 +367,15 @@ class IndexManager
     }
   }
 
+  /**
+   * @param string $type
+   * @param SecurityContext|NULL $context
+   * @param int $from
+   * @param int $size
+   * @param string $order
+   * @param array $criterias
+   * @return PersistentObject[]
+   */
   public function listObjects($type, SecurityContext $context = NULL, $from = 0, $size = 10000, $order = 'asc', $criterias = []) {
     $query = array(
       'query' => array(

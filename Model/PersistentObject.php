@@ -2,7 +2,9 @@
 
 namespace AdimeoDataSuite\Model;
 
-abstract class PersistentObject
+use AdimeoDataSuite\Index\IndexManager;
+
+abstract class PersistentObject implements Importable, Exportable
 {
 
   abstract function getId();
@@ -39,5 +41,18 @@ abstract class PersistentObject
   public function getTags() {
     return [];
   }
+
+  function export(IndexManager $indexManager)
+  {
+    return serialize($this);
+  }
+
+  function import($data, IndexManager $indexManager)
+  {
+    /** @var PersistentObject $obj */
+    $obj = self::unserialize($data);
+    $indexManager->persistObject($obj);
+  }
+
 
 }
