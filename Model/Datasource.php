@@ -281,7 +281,7 @@ abstract class Datasource extends PersistentObject
   private $batchStack = [];
   const BATCH_STACK_SIZE = 500;
 
-  private function emptyBatchStack(){
+  final function emptyBatchStack(){
     $this->execIndexManager->bulkIndex($this->batchStack);
     unset($this->batchStack);
     if ($this->getOutputManager() != null) {
