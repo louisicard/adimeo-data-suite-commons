@@ -11,4 +11,9 @@ interface OutputManager
    */
   function writeLn($text);
 
+  /**
+   * @param array $array
+   */
+  function dumpArray($array);
+
 }
