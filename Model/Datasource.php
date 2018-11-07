@@ -93,6 +93,7 @@ abstract class Datasource extends PersistentObject
   abstract function execute($args);
 
   final function startExecution($args) {
+
     $this->execute($args);
 
     //We empty the batch stack at the end of execution if there are documents left to index
@@ -304,11 +305,20 @@ abstract class Datasource extends PersistentObject
 
   final function initForExecution(IndexManager $indexManager, OutputManager $output) {
     $this->execIndexManager = $indexManager;
+
     $this->outputManager = $output;
+
     $this->execProcessors = $this->execIndexManager->listObjects('processor', null, 0, 10000, 'asc', array(
       'tags' => 'datasource_id=' . $this->getId()
     ));
+
     $this->parameters = $indexManager->listObjects('parameter');
+
+    $settings = $this->getSettings();
+    foreach($settings as $k => $v) {
+      $settings[$k] = $this->injectParameters($v);
+    }
+    $this->setSettings($settings);
   }
 
   /**
