@@ -337,6 +337,14 @@ abstract class Datasource extends PersistentObject
     $this->outputManager = $outputManager;
   }
 
+  /**
+   * @return IndexManager
+   */
+  public function getExecIndexManager()
+  {
+    return $this->execIndexManager;
+  }
+
   final function injectParameters($string) {
     preg_match_all('/(?<parameter>%[^%]*%)/i', $string, $matches);
     if(isset($matches['parameter'])) {
