@@ -4,6 +4,7 @@ namespace AdimeoDataSuite\Model;
 
 
 use AdimeoDataSuite\Index\IndexManager;
+use AdimeoDataSuite\ProcessorFilter\MatchingListFilter;
 
 class Processor extends PersistentObject
 {
@@ -162,8 +163,20 @@ class Processor extends PersistentObject
         $data['siblings'][] = $indexManager->findObject('datasource', $sibling)->export($indexManager);
       }
     }
+
+    $definition = json_decode($this->getDefinition(), TRUE);
+    if(isset($definition['filters'])) {
+      foreach($definition['filters'] as $filter) {
+        if($filter['class'] == MatchingListFilter::class) {
+          if(isset($filter['settings']['matching_list_id'])) {
+            $data['matching_lists'][] = $indexManager->findObject('matching_list', $filter['settings']['matching_list_id'])->export($indexManager);
+          }
+        }
+      }
+    }
+
     $data['processor'] = self::serialize();
-    // TODO: Deal with matching lists
+
     return json_encode($data);
   }
 
@@ -192,6 +205,13 @@ class Processor extends PersistentObject
     if(isset($data['siblings'])) {
       foreach($data['siblings'] as $sibling) {
         PersistentObject::import($sibling, $indexManager);
+      }
+    }
+
+    //Matching lists
+    if(isset($data['matching_lists'])) {
+      foreach($data['matching_lists'] as $matchingList) {
+        PersistentObject::import($matchingList, $indexManager);
       }
     }
 
