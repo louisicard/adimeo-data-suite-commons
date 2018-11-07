@@ -12,7 +12,7 @@ namespace AdimeoDataSuite\Exception;
 class DatasourceExecutionException extends \Exception
 {
 
-  private $message;
+  protected $message;
 
   public function __construct($message)
   {
