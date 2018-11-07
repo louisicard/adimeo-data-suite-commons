@@ -4,6 +4,7 @@ namespace AdimeoDataSuite\Model;
 
 
 use AdimeoDataSuite\Index\IndexManager;
+use AdimeoDataSuite\PDO\PDOPool;
 use AdimeoDataSuite\ProcessorFilter\SmartMapper;
 
 abstract class Datasource extends PersistentObject
@@ -303,10 +304,17 @@ abstract class Datasource extends PersistentObject
    */
   private $outputManager;
 
-  final function initForExecution(IndexManager $indexManager, OutputManager $output) {
+  /**
+   * @var PDOPool
+   */
+  private $pdoPool;
+
+  final function initForExecution(IndexManager $indexManager, OutputManager $output, PDOPool $pdoPool) {
     $this->execIndexManager = $indexManager;
 
     $this->outputManager = $output;
+
+    $this->pdoPool = $pdoPool;
 
     $this->execProcessors = $this->execIndexManager->listObjects('processor', null, 0, 10000, 'asc', array(
       'tags' => 'datasource_id=' . $this->getId()
@@ -335,6 +343,14 @@ abstract class Datasource extends PersistentObject
   public function setOutputManager($outputManager)
   {
     $this->outputManager = $outputManager;
+  }
+
+  /**
+   * @return PDOPool
+   */
+  public function getPDOPool()
+  {
+    return $this->pdoPool;
   }
 
   /**
