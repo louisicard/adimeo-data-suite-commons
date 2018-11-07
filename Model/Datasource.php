@@ -79,6 +79,11 @@ abstract class Datasource extends PersistentObject
   abstract function getSettingFields();
 
   /**
+   * @return array
+   */
+  abstract function getExecutionArguments();
+
+  /**
    * @return string
    */
   abstract function getDisplayName();
