@@ -81,7 +81,7 @@ abstract class Datasource extends PersistentObject
   /**
    * @return array
    */
-  abstract function getExecutionArguments();
+  abstract function getExecutionArgumentFields();
 
   /**
    * @return string
