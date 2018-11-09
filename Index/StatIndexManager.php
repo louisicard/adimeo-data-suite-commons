@@ -4,6 +4,7 @@ namespace AdimeoDataSuite\Index;
 
 use Elasticsearch\Client;
 use Elasticsearch\ClientBuilder;
+use Elasticsearch\Common\Exceptions\Missing404Exception;
 
 class StatIndexManager
 {
@@ -33,6 +34,28 @@ class StatIndexManager
 
   public function saveStat($target, $facets = array(), $query = '', $analyzedQuery = '', $apiUrl = '', $resultCount = 0, $responseTime = 0, $remoteAddress = '', $tag = '')
   {
+    try {
+      $this->getClient()->search(array(
+        'index' => static::APP_INDEX_NAME,
+        'type' => 'stat',
+        'body' => array(
+          'query' => array(
+            'match_all' => array(
+              'boost' => 1
+            )
+          )
+        )
+      ));
+    }
+    catch(Missing404Exception $ex) {
+      //stat index does not exist
+      $this->client->indices()->create(array(
+        'index' => static::APP_INDEX_NAME,
+        'body' => []
+      ));
+      $json = json_decode(file_get_contents(__DIR__ . '/../Resources/stat_structure.json'), TRUE);
+      $this->putMapping(static::APP_INDEX_NAME, 'stat', $json);
+    }
     $indexName = strpos($target, '.') === 0 ? ('.' . explode('.', $target)[1]) : explode('.', $target)[0];
     $params = array(
       'index' => static::APP_INDEX_NAME,
@@ -57,6 +80,17 @@ class StatIndexManager
     $this->getClient()->indices()->flush();
     unset($params);
     return $r;
+  }
+
+  private function putMapping($indexName, $mappingName, $mapping) {
+    $body = array(
+      'properties' => $mapping
+    );
+    $this->client->indices()->putMapping(array(
+      'index' => $indexName,
+      'type' => $mappingName,
+      'body' => $body
+    ));
   }
 
 }
