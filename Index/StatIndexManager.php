@@ -32,7 +32,7 @@ class StatIndexManager
     return $this->client;
   }
 
-  public function saveStat($target, $facets = array(), $query = '', $analyzedQuery = '', $apiUrl = '', $resultCount = 0, $responseTime = 0, $remoteAddress = '', $tag = '')
+  public function saveStat($target, $facets = array(), $keywords = [], $rawKeyWords = [], $apiUrl = '', $resultCount = 0, $responseTime = 0, $remoteAddress = '', $tag = '')
   {
     try {
       $this->getClient()->search(array(
@@ -67,10 +67,8 @@ class StatIndexManager
         'remote_addr' => $remoteAddress,
         'log' => $tag,
         'facets' => $facets,
-        'query' => array(
-          'raw' => $query,
-          'analyzed' => $analyzedQuery
-        ),
+        'keywords' => $keywords,
+        'keywords_raw' => $rawKeyWords,
         'api_url' => $apiUrl,
         'result_count' => $resultCount,
         'response_time' => $responseTime
