@@ -301,6 +301,7 @@ class IndexManager
   }
 
   public function persistObject(PersistentObject $o) {
+    $updated = new \DateTime();
     $params = array(
       'index' => static::APP_INDEX_NAME,
       'type' => 'store_item',
@@ -309,11 +310,16 @@ class IndexManager
         'type' => $o->getType(),
         'created_by' => $o->getCreatedBy(),
         'tags' => $o->getTags(),
-        'data' => $o->serialize()
+        'data' => $o->serialize(),
+        'updated' => $updated->format('Y-m-d\TH:i:s')
       )
     );
     if($o->getId() != null) {
       $params['id'] = $o->getId();
+    }
+    else {
+      $created = new \DateTime();
+      $params['body']['created'] = $created->format('Y-m-d\TH:i:s');
     }
     $r = $this->client->index($params);
     if(isset($r['_id'])){

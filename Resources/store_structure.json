@@ -46,6 +46,16 @@
     "created_by": {
       "type": "keyword",
       "store": true
+    },
+    "created": {
+      "type": "date",
+      "store": true,
+      "format": "date_time_no_millis"
+    },
+    "updated": {
+      "type": "date",
+      "store": true,
+      "format": "date_time_no_millis"
     }
   }
 }
