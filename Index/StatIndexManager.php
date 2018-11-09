@@ -93,4 +93,17 @@ class StatIndexManager
     ));
   }
 
+  public function search($indexName, $query, $from = 0, $size = 20, $type = null) {
+    $params = array(
+      'index' => $indexName,
+      'body' =>$query
+    );
+    if($type != null) {
+      $params['type'] = $type;
+    }
+    $params['body']['from'] = $from;
+    $params['body']['size'] = $size;
+    return $this->client->search($params);
+  }
+
 }
