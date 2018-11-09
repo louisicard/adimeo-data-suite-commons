@@ -5,7 +5,7 @@ namespace AdimeoDataSuite\Index;
 use Elasticsearch\Client;
 use Elasticsearch\ClientBuilder;
 
-class IndexManager
+class StatIndexManager
 {
 
   const APP_INDEX_NAME = '.adimeo_data_suite';
