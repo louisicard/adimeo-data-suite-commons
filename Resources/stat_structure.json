@@ -1,0 +1,62 @@
+{
+    "api_url": {
+        "type": "keyword",
+        "store": true
+    },
+    "date": {
+        "type": "date",
+        "store": true,
+        "format": "date_optional_time"
+    },
+    "facets": {
+        "type": "keyword",
+        "store": true
+    },
+    "index": {
+        "type": "keyword",
+        "store": true
+    },
+    "log": {
+        "type": "keyword",
+        "store": true
+    },
+    "mapping": {
+        "type": "keyword",
+        "store": true
+    },
+    "query": {
+        "type": "nested",
+        "properties": {
+            "analyzed": {
+                "type": "string",
+                "analyzer": "standard",
+                "fields": {
+                    "raw": {
+                        "type": "keyword"
+                    }
+                }
+            },
+            "raw": {
+                "type": "string",
+                "analyzer": "standard",
+                "fields": {
+                    "raw": {
+                        "type": "keyword"
+                    }
+                }
+            }
+        }
+    },
+    "remote_addr": {
+        "type": "keyword",
+        "store": true
+    },
+    "response_time": {
+        "type": "integer",
+        "store": true
+    },
+    "result_count": {
+        "type": "integer",
+        "store": true
+    }
+}
