@@ -8,7 +8,7 @@ use Elasticsearch\ClientBuilder;
 class StatIndexManager
 {
 
-  const APP_INDEX_NAME = '.adimeo_data_suite';
+  const APP_INDEX_NAME = '.adimeo_data_suite_stat';
 
   /**
    * @var Client
@@ -35,7 +35,7 @@ class StatIndexManager
   {
     $indexName = strpos($target, '.') === 0 ? ('.' . explode('.', $target)[1]) : explode('.', $target)[0];
     $params = array(
-      'index' => IndexManager::APP_INDEX_NAME,
+      'index' => static::APP_INDEX_NAME,
       'type' => 'stat',
       'body' => array(
         'date' => date('Y-m-d\TH:i:s'),
