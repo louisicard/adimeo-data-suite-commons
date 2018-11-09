@@ -50,12 +50,12 @@
     "created": {
       "type": "date",
       "store": true,
-      "format": "date_time_no_millis"
+      "format": "date_optional_time"
     },
     "updated": {
       "type": "date",
       "store": true,
-      "format": "date_time_no_millis"
+      "format": "date_optional_time"
     }
   }
 }
