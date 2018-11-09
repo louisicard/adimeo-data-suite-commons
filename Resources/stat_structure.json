@@ -24,28 +24,13 @@
         "type": "keyword",
         "store": true
     },
-    "query": {
-        "type": "nested",
-        "properties": {
-            "analyzed": {
-                "type": "string",
-                "analyzer": "standard",
-                "fields": {
-                    "raw": {
-                        "type": "keyword"
-                    }
-                }
-            },
-            "raw": {
-                "type": "string",
-                "analyzer": "standard",
-                "fields": {
-                    "raw": {
-                        "type": "keyword"
-                    }
-                }
-            }
-        }
+    "keywords": {
+        "type": "keyword",
+        "store": true
+    },
+    "keywords_raw": {
+        "type": "keyword",
+        "store": true
     },
     "remote_addr": {
         "type": "keyword",
