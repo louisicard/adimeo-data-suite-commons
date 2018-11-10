@@ -803,4 +803,8 @@ class IndexManager
     return isset($r) ? $r : null;
   }
 
+  public function flush() {
+    $this->client->indices()->flush();
+  }
+
 }
