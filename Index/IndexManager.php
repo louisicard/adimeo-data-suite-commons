@@ -321,6 +321,7 @@ class IndexManager
     );
     if($o->getId() != null) {
       $params['id'] = $o->getId();
+      $params['body']['created'] = $o->getCreated()->format('Y-m-d\TH:i:s');
     }
     else {
       $params['body']['created'] = $created->format('Y-m-d\TH:i:s');
