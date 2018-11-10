@@ -316,7 +316,8 @@ class IndexManager
         'created_by' => $o->getCreatedBy(),
         'tags' => $o->getTags(),
         'data' => $o->serialize(),
-        'updated' => $updated->format('Y-m-d\TH:i:s')
+        'updated' => $updated->format('Y-m-d\TH:i:s'),
+        'created' => $updated->format('Y-m-d\TH:i:s')
       )
     );
     if($o->getId() != null) {
