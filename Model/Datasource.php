@@ -220,6 +220,9 @@ abstract class Datasource extends PersistentObject
               }
             }
           }
+          //Let's clean data before indexing
+          $this->cleanArray($to_index);
+
           $target_r = explode('.', $definition['target']);
           $indexName = $target_r[0];
           $mappingName = $target_r[1];
@@ -249,6 +252,8 @@ abstract class Datasource extends PersistentObject
       if(isset($to_index))
         unset($to_index);
     } catch (\Exception $ex) {
+      $this->getOutputManager()->writeLn('An exception has occured => ' . $ex->getMessage());
+      $this->getOutputManager()->writeLn($ex->getTraceAsString());
 //      IndexManager::getInstance()->log('error', 'Exception occured while indexing document from datasource "' . $this->getName() . '"', array(
 //        'Exception type' => get_class($ex2),
 //        'Message' => $ex2->getMessage(),
@@ -412,6 +417,17 @@ abstract class Datasource extends PersistentObject
 
   protected function extractTextFromXML($xml) {
     return strip_tags($xml);
+  }
+
+  private function cleanArray(&$array) {
+    foreach($array as $k => $v) {
+      if(is_array($v)) {
+        $this->cleanArray($array[$k]);
+      }
+      else {
+        $array[$k] = $this->cleanNonUtf8Chars($v);
+      }
+    }
   }
 
   private function cleanNonUtf8Chars($text){
