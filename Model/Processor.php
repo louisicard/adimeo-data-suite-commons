@@ -187,12 +187,17 @@ class Processor extends PersistentObject
     $mappingName = array_keys($data['mapping'])[0];
 
     //Index
-    if($override) {
-      $indexManager->deleteIndex($indexName);
-      $indexManager->createIndex($indexName, $data['index'][$indexName]['settings']['index']);
+    $indexExists = $indexManager->getIndex($indexName) != null;
+    if($indexExists) {
+      if ($override) {
+        $indexManager->deleteIndex($indexName);
+        $indexManager->createIndex($indexName, $data['index'][$indexName]['settings']['index']);
+      } else {
+        $indexManager->updateIndex($indexName, $data['index'][$indexName]['settings']['index']);
+      }
     }
     else {
-      $indexManager->updateIndex($indexName, $data['index'][$indexName]['settings']['index']);
+      $indexManager->createIndex($indexName, $data['index'][$indexName]['settings']['index']);
     }
 
     //Mapping
