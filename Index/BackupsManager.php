@@ -5,7 +5,7 @@ use Elasticsearch\Client;
 use Elasticsearch\ClientBuilder;
 
 
-class BackupManager extends IndexManager
+class BackupsManager
 {
 
   const APP_INDEX_NAME = '.adimeo_data_suite';
@@ -37,10 +37,16 @@ class BackupManager extends IndexManager
   }
 
 
+  /**
+   * Get all repositories
+   *
+   * @return array
+   */
   public function getBackupRepositories()
   {
-    $r = $this->getClient()->snapshot()->getRepository(array('repository' => '_all'));
-    return $r;
+    $allRepositories = $this->getClient()->snapshot()->getRepository(array('repository' => '_all'));
+
+    return $allRepositories;
   }
 
 }
