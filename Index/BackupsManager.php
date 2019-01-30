@@ -42,11 +42,22 @@ class BackupsManager
    *
    * @return array
    */
-  public function getBackupRepositories()
+  public function getBackupsRepositories()
   {
     $allRepositories = $this->getClient()->snapshot()->getRepository(array('repository' => '_all'));
 
     return $allRepositories;
+  }
+
+  /**
+   * Get all snapshots
+   *
+   * @param $repoName
+   * @return array
+   */
+  public function getSnapshots($repoName)
+  {
+    return $this->getClient()->snapshot()->get(array('repository' => $repoName, 'snapshot' => '_all'));
   }
 
 }
