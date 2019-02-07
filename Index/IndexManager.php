@@ -9,10 +9,7 @@ use Elasticsearch\Client;
 use Elasticsearch\ClientBuilder;
 use Elasticsearch\Common\Exceptions\Missing404Exception;
 use Elasticsearch\Common\Exceptions\NoNodesAvailableException;
-use AdimeoDataSuite\Bundle\ADSSecurityBundle\Security\User;
-use AdimeoDataSuite\Bundle\ADSSecurityBundle\Security\Group;
-use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorage;
-use Symfony\Component\Security\Core\Security;
+
 
 class IndexManager
 {
@@ -26,12 +23,7 @@ class IndexManager
     private $client;
 
 
-    /**
-     * @var TokenStorage
-     */
-    private $tokenStorage;
-
-    public function __construct($elasticsearchServerUrl, $tokenStorage)
+    public function __construct($elasticsearchServerUrl)
     {
         $clientBuilder = new ClientBuilder();
         if (!defined('JSON_PRESERVE_ZERO_FRACTION')) {
@@ -39,8 +31,6 @@ class IndexManager
         }
         $clientBuilder->setHosts(array($elasticsearchServerUrl));
         $this->client = $clientBuilder->build();
-
-        $this->tokenStorage = $tokenStorage;
     }
 
     /**
@@ -49,14 +39,6 @@ class IndexManager
     public function getClient()
     {
         return $this->client;
-    }
-
-    /**
-     * @return TokenStorage
-     */
-    public function getTokenStorage(): TokenStorage
-    {
-        return $this->tokenStorage;
     }
 
     public function getServerInfo()
@@ -922,18 +904,17 @@ class IndexManager
     /**
      * Get Elastic information
      *
+     * @param SecurityContext $securityContext
      * @param bool $checkACL
      * @return array
      */
-    public function getElasticInfo($checkACL = true)
+    public function getElasticInfo(SecurityContext $securityContext, $checkACL = true)
     {
         $info = array();
         $stats = $this->getClient()->indices()->stats();
-        if ($checkACL) {
-            $allowed_indexes = $this->getCurrentUserAllowedIndexes();
-        }
+        $allowed_indexes = ($checkACL) ? $securityContext->getRestrictions()['indexes'] : [];
         foreach ($stats['indices'] as $index_name => $stat) {
-            if (!$checkACL || $this->isCurrentUserAdmin() || in_array($index_name, $allowed_indexes)) {
+            if (!$checkACL || $securityContext->isAdmin() || in_array($index_name, $allowed_indexes)) {
                 $info[$index_name] = array(
                     'count' => $stat['total']['docs']['count'] - $stat['total']['docs']['deleted'],
                     'size' => round($stat['total']['store']['size_in_bytes'] / 1024 / 1024, 2) . ' MB',
@@ -950,38 +931,5 @@ class IndexManager
         }
         unset($stats);
         return $info;
-    }
-
-    private function getCurrentUserAllowedIndexes()
-    {
-        /** @var User $user */
-        $user = $this->getCurrentUser();
-        $indexes = [];
-        foreach ($user->getGroups() as $groupId) {
-            $group = $this->getGroup($groupId);
-            foreach ($group->getIndexes() as $index) {
-                if (!in_array($index, $indexes)) {
-                    $indexes[] = $index;
-                }
-            }
-        }
-        return $indexes;
-    }
-
-    /**
-     * @return User
-     */
-    private function getCurrentUser(){
-        return $this->getTokenStorage()->getToken()->getUser();
-    }
-
-    /**
-     * @return bool
-     */
-    private function isCurrentUserAdmin(){
-        /** @var User $user */
-        $user = $this->getTokenStorage()->getToken()->getUser();
-
-        return in_array("ROLE_ADMIN", $user->getRoles());
     }
 }
