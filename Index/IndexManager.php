@@ -373,8 +373,13 @@ class IndexManager
     $r = $this->search(static::APP_INDEX_NAME, $query);
     if(isset($r['hits']['hits'][0])) {
       $object = PersistentObject::unserialize($r['hits']['hits'][0]['_source']['data']);
-      $object->setId($r['hits']['hits'][0]['_id']);
-      return $object;
+      if($object instanceof PersistentObject) {
+        $object->setId($r['hits']['hits'][0]['_id']);
+        return $object;
+      }
+      else {
+        return NULL;
+      }
     }
     else {
       return null;
@@ -553,8 +558,10 @@ class IndexManager
     $objects = [];
     foreach($r['hits']['hits'] as $hit) {
       $object = PersistentObject::unserialize($hit['_source']['data']);
-      $object->setId($hit['_id']);
-      $objects[] = $object;
+      if($object instanceof PersistentObject) {
+        $object->setId($hit['_id']);
+        $objects[] = $object;
+      }
     }
     return $objects;
   }
