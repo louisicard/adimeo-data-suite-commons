@@ -554,7 +554,7 @@ class IndexManager
         )
       );
     }
-    $r = $this->search(static::APP_INDEX_NAME, $query);
+    $r = $this->search(static::APP_INDEX_NAME, $query, $from, $size);
     $objects = [];
     foreach($r['hits']['hits'] as $hit) {
       $object = PersistentObject::unserialize($hit['_source']['data']);
