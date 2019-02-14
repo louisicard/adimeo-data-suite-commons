@@ -818,4 +818,35 @@ class IndexManager
     $this->client->indices()->flush();
   }
 
+  /**
+   * Get Elastic information
+   *
+   * @param SecurityContext $securityContext
+   * @param bool $checkACL
+   * @return array
+   */
+  public function getElasticInfo(SecurityContext $securityContext, $checkACL = true)
+  {
+    $info = array();
+    $stats = $this->getClient()->indices()->stats();
+    $allowed_indexes = ($checkACL) ? $securityContext->getRestrictions()['indexes'] : [];
+    foreach ($stats['indices'] as $index_name => $stat) {
+      if (!$checkACL || $securityContext->isAdmin() || in_array($index_name, $allowed_indexes)) {
+        $info[$index_name] = array(
+          'count' => $stat['total']['docs']['count'] - $stat['total']['docs']['deleted'],
+          'size' => round($stat['total']['store']['size_in_bytes'] / 1024 / 1024, 2) . ' MB',
+        );
+        $mappings = $this->getClient()->indices()->getMapping(array('index' => $index_name));
+        foreach ($mappings[$index_name]['mappings'] as $mapping => $properties) {
+          $info[$index_name]['mappings'][] = array(
+            'name' => $mapping,
+            'field_count' => count($properties['properties']),
+          );
+        }
+        unset($mappings);
+      }
+    }
+    unset($stats);
+    return $info;
+  }
 }
