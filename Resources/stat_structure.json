@@ -43,5 +43,9 @@
     "result_count": {
         "type": "integer",
         "store": true
+    },
+    "text": {
+        "type": "keyword",
+        "store": true
     }
 }
