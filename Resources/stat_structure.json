@@ -47,5 +47,9 @@
     "text": {
         "type": "keyword",
         "store": true
+    },
+    "hits": {
+        "type": "keyword",
+        "store": true
     }
 }

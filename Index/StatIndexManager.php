@@ -32,7 +32,7 @@ class StatIndexManager
     return $this->client;
   }
 
-  public function saveStat($target, $facets = array(), $text, $keywords = [], $rawKeyWords = [], $apiUrl = '', $resultCount = 0, $responseTime = 0, $remoteAddress = '', $tag = '')
+  public function saveStat($target, $facets = array(), $text, $keywords = [], $rawKeyWords = [], $apiUrl = '', $resultCount = 0, $responseTime = 0, $remoteAddress = '', $tag = '', $hits = [])
   {
     try {
       $this->getClient()->search(array(
@@ -72,7 +72,8 @@ class StatIndexManager
         'api_url' => $apiUrl,
         'result_count' => $resultCount,
         'response_time' => $responseTime,
-        'text' => $text
+        'text' => $text,
+        'hits' => $hits
       )
     );
     $r = $this->getClient()->index($params);
