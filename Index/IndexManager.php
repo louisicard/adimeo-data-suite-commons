@@ -583,18 +583,21 @@ class IndexManager
     }
   }
 
-  public function scroll($queryBody, $index, $mapping, $callback, $size = 10)
+  public function scroll($queryBody, $index, $mapping, $callback, $size = 10, $context = null)
   {
-    $r = $this->client->search(array(
+    $params = array(
       'index' => $index,
-      'type' => $mapping,
       'body' => $queryBody,
       'scroll' => '10ms',
       'size' => $size
-    ));
+    );
+    if($mapping != null) {
+      $params['type'] = $mapping;
+    }
+    $r = $this->client->search($params);
     if (isset($r['_scroll_id'])) {
       while (count($r['hits']['hits']) > 0) {
-        $callback($r['hits']['hits']);
+        $callback($r['hits']['hits'], $context);
         $scrollId = $r['_scroll_id'];
         $r = $this->client->scroll(array(
           'scroll_id' => $scrollId,
