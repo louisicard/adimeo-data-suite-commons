@@ -285,6 +285,10 @@ class IndexManager
     }
     $params['body']['from'] = $from;
     $params['body']['size'] = $size;
+    //ini_set('xdebug.var_display_max_depth', 15);
+    //ini_set('xdebug.var_display_max_data', 2048);
+    //var_dump($params);
+    //var_dump(json_encode($params['body']));
     return $this->client->search($params);
   }
 
@@ -292,7 +296,7 @@ class IndexManager
   { //Bug fix form empty queries in global aggregations
     if ($array != null) {
       foreach ($array as $k => $v) {
-        if ($k == 'global' && empty($v))
+        if ($k == 'global' && empty($v) || $k == 'reverse_nested' && empty($v))
           $array[$k] = new \stdClass();
         elseif (is_array($v))
           $this->sanitizeGlobalAgg($array[$k]);
