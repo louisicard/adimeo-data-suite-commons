@@ -285,10 +285,6 @@ class IndexManager
     }
     $params['body']['from'] = $from;
     $params['body']['size'] = $size;
-    //ini_set('xdebug.var_display_max_depth', 15);
-    //ini_set('xdebug.var_display_max_data', 2048);
-    //var_dump($params);
-    //var_dump(json_encode($params['body']));
     return $this->client->search($params);
   }
 
