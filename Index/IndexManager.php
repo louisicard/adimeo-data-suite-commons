@@ -261,10 +261,13 @@ class IndexManager
     }
   }
 
-  public function initStore() {
+  public function initStore($numberOfShards = 1, $numberOfReplicas = 1) {
     $indices = array_keys($this->getIndicesList());
     if(!in_array(static::APP_INDEX_NAME, $indices)) {
       $json = json_decode(file_get_contents(__DIR__ . '/../Resources/store_structure.json'), TRUE);
+      $indexSettings = $json['index'];
+      $indexSettings['number_of_shards'] = $numberOfShards;
+      $indexSettings['number_of_replicas'] = $numberOfReplicas;
       $this->createIndex(static::APP_INDEX_NAME, $json['index']);
     }
     $mapping = $this->getMapping(static::APP_INDEX_NAME, 'store_item');

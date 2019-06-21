@@ -16,13 +16,20 @@ class StatIndexManager
    */
   private $client;
 
-  public function __construct($elasticsearchServerUrl) {
+  private $indexNumberOfShards;
+
+  private $indexNumberOfReplicas;
+
+  public function __construct($elasticsearchServerUrl, $numberOfShards = 1, $numberOfReplicas = 1) {
     $clientBuilder = new ClientBuilder();
     if(!defined('JSON_PRESERVE_ZERO_FRACTION')){
       $clientBuilder->allowBadJSONSerialization();
     }
     $clientBuilder->setHosts(array($elasticsearchServerUrl));
     $this->client = $clientBuilder->build();
+
+    $this->indexNumberOfShards = $numberOfShards;
+    $this->indexNumberOfReplicas = $numberOfReplicas;
   }
 
   /**
@@ -51,7 +58,12 @@ class StatIndexManager
       //stat index does not exist
       $this->client->indices()->create(array(
         'index' => static::APP_INDEX_NAME,
-        'body' => []
+        'body' => [
+          'settings' => [
+            'number_of_shards' => $this->indexNumberOfShards,
+            'number_of_replicas' => $this->indexNumberOfReplicas,
+          ]
+        ]
       ));
       $json = json_decode(file_get_contents(__DIR__ . '/../Resources/stat_structure.json'), TRUE);
       $this->putMapping(static::APP_INDEX_NAME, 'stat', $json);
