@@ -268,7 +268,7 @@ class IndexManager
       $indexSettings = $json['index'];
       $indexSettings['number_of_shards'] = $numberOfShards;
       $indexSettings['number_of_replicas'] = $numberOfReplicas;
-      $this->createIndex(static::APP_INDEX_NAME, $json['index']);
+      $this->createIndex(static::APP_INDEX_NAME, $indexSettings);
     }
     $mapping = $this->getMapping(static::APP_INDEX_NAME, 'store_item');
     if($mapping == null) {
