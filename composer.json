@@ -4,7 +4,7 @@
     "psr-4": { "AdimeoDataSuite\\": "" }
   },
   "require": {
-    "elasticsearch/elasticsearch": "5.x",
-    "adimeo-data-suite/filters": "*"
+    "adimeo-data-suite/filters": "*",
+		"guzzlehttp/guzzle": "5.x"
   }
 }
