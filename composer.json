@@ -5,6 +5,6 @@
   },
   "require": {
     "adimeo-data-suite/filters": "*",
-		"guzzlehttp/guzzle": "5.x"
+		"guzzlehttp/guzzle": "*"
   }
 }
