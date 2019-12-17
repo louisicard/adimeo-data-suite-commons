@@ -2,9 +2,7 @@
 
 namespace AdimeoDataSuite\Index;
 
-use Elasticsearch\Client;
-use Elasticsearch\ClientBuilder;
-use Elasticsearch\Common\Exceptions\Missing404Exception;
+use AdimeoDataSuite\Client\ElasticsearchClient;
 
 class StatIndexManager
 {
@@ -12,7 +10,7 @@ class StatIndexManager
   const APP_INDEX_NAME = '.adimeo_data_suite_stat';
 
   /**
-   * @var Client
+   * @var ElasticsearchClient
    */
   private $client;
 
@@ -21,19 +19,14 @@ class StatIndexManager
   private $indexNumberOfReplicas;
 
   public function __construct($elasticsearchServerUrl, $numberOfShards = 1, $numberOfReplicas = 1) {
-    $clientBuilder = new ClientBuilder();
-    if(!defined('JSON_PRESERVE_ZERO_FRACTION')){
-      $clientBuilder->allowBadJSONSerialization();
-    }
-    $clientBuilder->setHosts(array($elasticsearchServerUrl));
-    $this->client = $clientBuilder->build();
+    $this->client = new ElasticsearchClient($elasticsearchServerUrl);
 
     $this->indexNumberOfShards = $numberOfShards;
     $this->indexNumberOfReplicas = $numberOfReplicas;
   }
 
   /**
-   * @return Client
+   * @return ElasticsearchClient
    */
   public function getClient() {
     return $this->client;
@@ -42,80 +35,57 @@ class StatIndexManager
   public function saveStat($target, $facets = array(), $text, $keywords = [], $rawKeyWords = [], $apiUrl = '', $resultCount = 0, $responseTime = 0, $remoteAddress = '', $tag = '', $hits = [])
   {
     try {
-      $this->getClient()->search(array(
-        'index' => static::APP_INDEX_NAME,
-        'type' => 'stat',
-        'body' => array(
+      $this->getClient()->search(
+        static::APP_INDEX_NAME,
+        array(
           'query' => array(
             'match_all' => array(
               'boost' => 1
             )
           )
-        )
-      ));
+        ),
+        'stat'
+      );
     }
-    catch(Missing404Exception $ex) {
+    catch(\Exception $ex) {
       //stat index does not exist
-      $this->client->indices()->create(array(
-        'index' => static::APP_INDEX_NAME,
-        'body' => [
-          'settings' => [
-            'number_of_shards' => $this->indexNumberOfShards,
-            'number_of_replicas' => $this->indexNumberOfReplicas,
-          ]
-        ]
-      ));
+      $this->client->createIndex(static::APP_INDEX_NAME, [
+        'number_of_shards' => $this->indexNumberOfShards,
+        'number_of_replicas' => $this->indexNumberOfReplicas,
+      ]);
       $json = json_decode(file_get_contents(__DIR__ . '/../Resources/stat_structure.json'), TRUE);
       $this->putMapping(static::APP_INDEX_NAME, 'stat', $json);
     }
     $indexName = strpos($target, '.') === 0 ? ('.' . explode('.', $target)[1]) : explode('.', $target)[0];
-    $params = array(
-      'index' => static::APP_INDEX_NAME,
-      'type' => 'stat',
-      'body' => array(
-        'date' => date('Y-m-d\TH:i:s'),
-        'index' => $indexName,
-        'mapping' => $target,
-        'remote_addr' => $remoteAddress,
-        'log' => $tag,
-        'facets' => $facets,
-        'keywords' => $keywords,
-        'keywords_raw' => $rawKeyWords,
-        'api_url' => $apiUrl,
-        'result_count' => $resultCount,
-        'response_time' => $responseTime,
-        'text' => $text,
-        'hits' => $hits
-      )
-    );
-    $r = $this->getClient()->index($params);
-    $this->getClient()->indices()->flush();
+    $r = $this->getClient()->index(static::APP_INDEX_NAME, 'stat', array(
+      'date' => date('Y-m-d\TH:i:s'),
+      'index' => $indexName,
+      'mapping' => $target,
+      'remote_addr' => $remoteAddress,
+      'log' => $tag,
+      'facets' => $facets,
+      'keywords' => $keywords,
+      'keywords_raw' => $rawKeyWords,
+      'api_url' => $apiUrl,
+      'result_count' => $resultCount,
+      'response_time' => $responseTime,
+      'text' => $text,
+      'hits' => $hits
+    ));
+    $this->getClient()->flush();
     unset($params);
     return $r;
   }
 
   private function putMapping($indexName, $mappingName, $mapping) {
-    $body = array(
-      'properties' => $mapping
-    );
-    $this->client->indices()->putMapping(array(
-      'index' => $indexName,
-      'type' => $mappingName,
-      'body' => $body
-    ));
+    $this->client->putMapping($indexName, $mappingName, $mapping);
   }
 
   public function search($indexName, $query, $from = 0, $size = 20, $type = null) {
-    $params = array(
-      'index' => $indexName,
-      'body' =>$query
-    );
-    if($type != null) {
-      $params['type'] = $type;
-    }
-    $params['body']['from'] = $from;
-    $params['body']['size'] = $size;
-    return $this->client->search($params);
+    $body = $query;
+    $body['from'] = $from;
+    $body['size'] = $size;
+    return $this->client->search($indexName, $body);
   }
 
 }

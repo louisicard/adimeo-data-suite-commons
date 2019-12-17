@@ -2,13 +2,10 @@
 
 namespace AdimeoDataSuite\Index;
 
+use AdimeoDataSuite\Client\ElasticsearchClient;
 use AdimeoDataSuite\Model\Autopromote;
 use AdimeoDataSuite\Model\PersistentObject;
 use AdimeoDataSuite\Model\SecurityContext;
-use Elasticsearch\Client;
-use Elasticsearch\ClientBuilder;
-use Elasticsearch\Common\Exceptions\Missing404Exception;
-use Elasticsearch\Common\Exceptions\NoNodesAvailableException;
 
 class IndexManager
 {
@@ -17,21 +14,16 @@ class IndexManager
   const APP_RECO_INDEX_NAME = '.adimeo_data_suite_reco';
 
   /**
-   * @var Client
+   * @var ElasticsearchClient
    */
   private $client;
 
   public function __construct($elasticsearchServerUrl) {
-    $clientBuilder = new ClientBuilder();
-    if(!defined('JSON_PRESERVE_ZERO_FRACTION')){
-      $clientBuilder->allowBadJSONSerialization();
-    }
-    $clientBuilder->setHosts(array($elasticsearchServerUrl));
-    $this->client = $clientBuilder->build();
+    $this->client = new ElasticsearchClient($elasticsearchServerUrl);
   }
 
   /**
-   * @return Client
+   * @return ElasticsearchClient
    */
   public function getClient() {
     return $this->client;
@@ -39,22 +31,20 @@ class IndexManager
 
   public function getServerInfo() {
     return array(
-      'server_info' => $this->client->info(),
-      'health' => $this->client->cluster()->health(),
-      'stats' => $this->client->cluster()->stats(),
+      'server_info' => $this->client->getServerInfo(),
+      'health' => $this->client->getClusterHealth(),
+      'stats' => $this->client->getStats(),
     );
   }
 
   public function getIndicesList(SecurityContext $context = NULL) {
-    $mappings = $this->client->indices()->getMapping();
-    $settings = $this->client->indices()->getSettings();
-    $indices = $this->client->indices()->stats()['indices'];
+    $structure = $this->client->getStructure();
+    $stats = $this->client->getStats();
+    $indices = $stats['indices'];
     foreach($indices as $index => $stats) {
-      if(isset($settings[$index])) {
-        $indices[$index]['settings'] = $settings[$index]['settings'];
-      }
-      if(isset($mappings[$index])) {
-        $indices[$index]['mappings'] = $mappings[$index]['mappings'];
+      if(isset($structure[$index])) {
+        $indices[$index]['settings'] = $structure[$index]['settings'];
+        $indices[$index]['mappings'] = $structure[$index]['mappings'];
       }
     }
     ksort($indices);
@@ -70,14 +60,15 @@ class IndexManager
   function getIndicesInfo(SecurityContext $context = NULL)
   {
     $info = array();
-    $stats = $this->client->indices()->stats();
+    $stats = $this->client->getStats();
+    $structure = $this->client->getStructure();
     foreach ($stats['indices'] as $index_name => $stat) {
       $info[$index_name] = array(
         'count' => $stat['total']['docs']['count'] - $stat['total']['docs']['deleted'],
         'size' => round($stat['total']['store']['size_in_bytes'] / 1024 / 1024, 2) . ' MB',
       );
-      $mappings = $this->client->indices()->getMapping(array('index' => $index_name));
-      foreach ($mappings[$index_name]['mappings'] as $mapping => $properties) {
+      $mappings = $structure[$index_name]['mappings'];
+      foreach ($mappings as $mapping => $properties) {
         $info[$index_name]['mappings'][] = array(
           'name' => $mapping,
           'field_count' => count($properties['properties']),
@@ -247,18 +238,7 @@ class IndexManager
 
   function getMapping($indexName, $mappingName)
   {
-    try {
-      $mapping = $this->client->indices()->getMapping(array(
-        'index' => $indexName,
-        'type' => $mappingName,
-      ));
-      if (isset($mapping[$indexName]['mappings'][$mappingName])) {
-        return $mapping[$indexName]['mappings'][$mappingName];
-      } else
-        return null;
-    } catch (\Exception $ex) {
-      return null;
-    }
+    return $this->client->getMapping($indexName, $mappingName);
   }
 
   public function initStore($numberOfShards = 1, $numberOfReplicas = 1) {
@@ -288,7 +268,7 @@ class IndexManager
     }
     $params['body']['from'] = $from;
     $params['body']['size'] = $size;
-    return $this->client->search($params);
+    return $this->client->search($indexName, $params['body'], $type);
   }
 
   private function sanitizeGlobalAgg(&$array)
