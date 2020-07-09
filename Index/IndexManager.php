@@ -855,4 +855,12 @@ class IndexManager
     unset($stats);
     return $info;
   }
+
+  public function analyze($index, $analyzer, $text) {
+    return $this->getClient()->indices()->analyze([
+      'index' => $index,
+      'analyzer' => $analyzer,
+      'text' => $text,
+    ]);
+  }
 }
