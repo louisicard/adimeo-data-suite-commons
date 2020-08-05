@@ -138,10 +138,16 @@ class Processor extends PersistentObject
     else {
       $indexName = explode('.', $this->getTarget())[0];
     }
-    return array(
+    $tags = array(
       'datasource_id=' . $this->getDatasourceId(),
       'index_name=' . $indexName
     );
+
+    foreach($this->getTargetSiblings() as $sibling) {
+      $tags[] = 'datasource_id=' . $sibling;
+    }
+
+    return $tags;
   }
 
   function export(IndexManager $indexManager)
