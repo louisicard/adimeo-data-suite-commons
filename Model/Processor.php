@@ -209,7 +209,7 @@ class Processor extends PersistentObject
     }
 
     //Mapping
-    $indexManager->putMapping($indexName, $mappingName, $data['mapping'][$mappingName]['properties'], isset($data['mapping'][$mappingName]['dynamic_templates']) ? $data['mapping'][$mappingName]['dynamic_templates'] : NULL);
+    $indexManager->putMapping($indexName, $indexManager->isLegacy() ? $mappingName : null, $data['mapping'][$mappingName]['properties'], isset($data['mapping'][$mappingName]['dynamic_templates']) ? $data['mapping'][$mappingName]['dynamic_templates'] : NULL);
 
     //Datasource
     PersistentObject::import($data['datasource'], $indexManager);
@@ -231,6 +231,12 @@ class Processor extends PersistentObject
     //Processor
     /** @var Processor $processor */
     $processor = PersistentObject::unserialize($data['processor']);
+    if(!$indexManager->isLegacy()) {
+      $processor->setTarget($indexName . '._doc');
+      $def = json_decode($processor->getDefinition(), true);
+      $def['target'] = $indexName . '._doc';
+      $processor->setDefinition(json_encode($def));
+    }
     $indexManager->persistObject($processor);
 
     return $processor;

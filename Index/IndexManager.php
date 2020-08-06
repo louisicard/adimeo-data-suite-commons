@@ -732,6 +732,9 @@ class IndexManager
     $bulkString = '';
     foreach ($items as $item) {
       $data = array('index' => array('_index' => $item['indexName'], '_type' => $item['mappingName']));
+      if(!$this->isLegacy()) {
+        unset($data['index']['_type']);
+      }
       if (isset($item['body']['_id'])) {
         $data['index']['_id'] = $item['body']['_id'];
         unset($item['body']['_id']);
@@ -747,7 +750,7 @@ class IndexManager
         try {
           $this->getServerClient()->bulk($bulkString);
           $retry = false;
-        } catch (NoNodesAvailableException $ex) {
+        } catch (ServerClientException $ex) {
           print get_class($this) . ' >> NoNodesAvailableException has been caught (' . $ex->getMessage() . ')' . PHP_EOL;
           if ($tries > 20) {
             $retry = false;
@@ -762,6 +765,7 @@ class IndexManager
         }
       }
     }
+    $this->getServerClient()->refresh();
   }
 
   public function indexDocument($indexName, $mappingName, $document, $flush = true)

@@ -5,6 +5,7 @@ namespace AdimeoDataSuite\Index;
 
 use AdimeoDataSuite\Exception\ServerClientException;
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\ClientException;
 
 class ServerClient
 {
@@ -48,6 +49,7 @@ class ServerClient
       $res = $this->client->request($method, $this->serverUrl . $uri . $querystring, $reqParams);
     }
     catch(\Exception $ex) {
+      /** @var ClientException $ex */
       throw new ServerClientException($ex->getMessage());
     }
     if($res->getStatusCode() >= 200 && $res->getStatusCode() < 300) {
