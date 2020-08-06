@@ -2,6 +2,7 @@
 
 namespace AdimeoDataSuite\Index;
 
+use AdimeoDataSuite\Exception\ServerClientException;
 use AdimeoDataSuite\Model\Autopromote;
 use AdimeoDataSuite\Model\PersistentObject;
 use AdimeoDataSuite\Model\SecurityContext;
@@ -21,13 +22,33 @@ class IndexManager
    */
   private $client;
 
-  public function __construct($elasticsearchServerUrl) {
+  /**
+   * @var ServerClient
+   */
+  private $serverClient;
+
+  /**
+   * @var bool
+   */
+  private $isLegacy = false;
+
+  public function __construct($elasticsearchServerUrl, $isLegacy = false) {
     $clientBuilder = new ClientBuilder();
     if(!defined('JSON_PRESERVE_ZERO_FRACTION')){
       $clientBuilder->allowBadJSONSerialization();
     }
     $clientBuilder->setHosts(array($elasticsearchServerUrl));
     $this->client = $clientBuilder->build();
+
+    $this->serverClient = new ServerClient($elasticsearchServerUrl);
+
+    if($isLegacy === '1' or $isLegacy === 1) {
+      $this->isLegacy = true;
+    }
+  }
+
+  public function isLegacy() {
+    return $this->isLegacy;
   }
 
   /**
@@ -37,18 +58,22 @@ class IndexManager
     return $this->client;
   }
 
+  public function getServerClient() {
+    return $this->serverClient;
+  }
+
   public function getServerInfo() {
     return array(
-      'server_info' => $this->client->info(),
-      'health' => $this->client->cluster()->health(),
-      'stats' => $this->client->cluster()->stats(),
+      'server_info' => $this->getServerClient()->info(),
+      'health' => $this->getServerClient()->clusterHealth(),
+      'stats' => $this->getServerClient()->clusterStats(),
     );
   }
 
   public function getIndicesList(SecurityContext $context = NULL) {
-    $mappings = $this->client->indices()->getMapping();
-    $settings = $this->client->indices()->getSettings();
-    $indices = $this->client->indices()->stats()['indices'];
+    $mappings = $this->getServerClient()->indicesMappings();
+    $settings = $this->getServerClient()->indicesSettings();
+    $indices = $this->getServerClient()->clusterStats()['indices'];
     foreach($indices as $index => $stats) {
       if(isset($settings[$index])) {
         $indices[$index]['settings'] = $settings[$index]['settings'];
@@ -70,18 +95,28 @@ class IndexManager
   function getIndicesInfo(SecurityContext $context = NULL)
   {
     $info = array();
-    $stats = $this->client->indices()->stats();
+    $stats = $this->getServerClient()->clusterStats();
     foreach ($stats['indices'] as $index_name => $stat) {
       $info[$index_name] = array(
         'count' => $stat['total']['docs']['count'] - $stat['total']['docs']['deleted'],
         'size' => round($stat['total']['store']['size_in_bytes'] / 1024 / 1024, 2) . ' MB',
       );
-      $mappings = $this->client->indices()->getMapping(array('index' => $index_name));
-      foreach ($mappings[$index_name]['mappings'] as $mapping => $properties) {
-        $info[$index_name]['mappings'][] = array(
-          'name' => $mapping,
-          'field_count' => count($properties['properties']),
-        );
+      $mappings = $this->getServerClient()->mapping($index_name);
+      if($this->isLegacy()) {
+        foreach ($mappings[$index_name]['mappings'] as $mapping => $properties) {
+          $info[$index_name]['mappings'][] = array(
+            'name' => $mapping,
+            'field_count' => count($properties['properties']),
+          );
+        }
+      }
+      else {
+        if(isset($mappings[$index_name]['mappings']['properties'])) {
+          $info[$index_name]['mappings'][] = array(
+            'name' => '_doc',
+            'field_count' => count($mappings[$index_name]['mappings']['properties']),
+          );
+        }
       }
     }
     ksort($info);
@@ -97,9 +132,9 @@ class IndexManager
 
   public function getIndex($indexName) {
     try {
-      return $this->client->indices()->getSettings(array('index' => $indexName));
+      return $this->getServerClient()->indexSettings($indexName);
     }
-    catch(Missing404Exception $ex) {
+    catch(ServerClientException $ex) {
       return null;
     }
   }
@@ -113,26 +148,27 @@ class IndexManager
       unset($settings['uuid']);
     if (isset($settings['provided_name']))
       unset($settings['provided_name']);
-    $params = array(
-      'index' => $indexName,
-    );
     $settings['analysis']['analyzer']['transliterator'] = array(
-      'filter' => array('standard', 'asciifolding', 'lowercase'),
+      'filter' => array('asciifolding', 'lowercase'),
       'tokenizer' => 'keyword'
     );
-    if (count($settings) > 0) {
-      $params['body'] = array(
-        'settings' => $settings,
-      );
+    if(!$this->isLegacy()) {
+      foreach($settings['analysis']['analyzer'] as $analyzer => $def) {
+        if(isset($def['filter'])) {
+          foreach($def['filter'] as $index => $filter) {
+            if($filter == 'standard') {
+              unset($settings['analysis']['analyzer'][$analyzer]['filter'][$index]);
+            }
+          }
+        }
+      }
     }
-    return $this->client->indices()->create($params);
+    return $this->getServerClient()->createIndex($indexName, $settings);
   }
 
   function updateIndex($indexName, $settings)
   {
-    $this->client->indices()->close(array(
-      'index' => $indexName
-    ));
+    $this->getServerClient()->closeIndex($indexName);
     if (isset($settings['creation_date']))
       unset($settings['creation_date']);
     if (isset($settings['version']))
@@ -149,27 +185,17 @@ class IndexManager
       unset($settings['provided_name']);
     if (count($settings) > 0) {
       try {
-        $this->client->indices()->putSettings(array(
-          'index' => $indexName,
-          'body' => array(
-            'settings' => $settings,
-          ),
-        ));
+        $this->getServerClient()->updateIndex($indexName, $settings);
       }
       catch(\Exception $ex) {
 
       }
     }
-    $this->client->indices()->open(array(
-      'index' => $indexName
-    ));
+    $this->getServerClient()->openIndex($indexName);
   }
 
   public function deleteIndex($indexName) {
-    $params = array(
-      'index' => $indexName
-    );
-    return $this->client->indices()->delete($params);
+    return $this->getServerClient()->deleteIndex($indexName);
   }
 
   /**
@@ -180,9 +206,7 @@ class IndexManager
   function getAnalyzers($indexName)
   {
     $analyzers = array('standard', 'simple', 'whitespace', 'stop', 'keyword', 'pattern', 'language', 'snowball');
-    $settings = $this->client->indices()->getSettings(array(
-      'index' => $indexName,
-    ));
+    $settings = $this->getServerClient()->indexSettings($indexName);
     if (isset($settings[$indexName]['settings']['index']['analysis']['analyzer'])) {
       foreach ($settings[$indexName]['settings']['index']['analysis']['analyzer'] as $analyzer => $definition) {
         $analyzers[] = $analyzer;
@@ -225,11 +249,11 @@ class IndexManager
 
   public function putMapping($indexName, $mappingName, $mapping, $dynamicTemplates = NULL, $wipeData = false) {
     if ($wipeData) {
-      $this->deleteByQuery($indexName, $mappingName, array(
+      $this->deleteByQuery($indexName, array(
         'query' => array(
           'match_all' => array('boost' => 1)
         )
-      ));
+      ), $this->isLegacy() ? $mappingName : null);
     }
 
     $body = array(
@@ -238,24 +262,24 @@ class IndexManager
     if($dynamicTemplates != NULL) {
       $body['dynamic_templates'] = $dynamicTemplates;
     }
-    $this->client->indices()->putMapping(array(
-      'index' => $indexName,
-      'type' => $mappingName,
-      'body' => $body
-    ));
+    $this->getServerClient()->putMapping($indexName, $this->isLegacy ? $mappingName : null, $body);
   }
 
   function getMapping($indexName, $mappingName)
   {
     try {
-      $mapping = $this->client->indices()->getMapping(array(
-        'index' => $indexName,
-        'type' => $mappingName,
-      ));
-      if (isset($mapping[$indexName]['mappings'][$mappingName])) {
-        return $mapping[$indexName]['mappings'][$mappingName];
-      } else
-        return null;
+      $mapping = $this->getServerClient()->getMapping($indexName,$this->isLegacy() ? $mappingName : null);
+      if($this->isLegacy()) {
+        if (isset($mapping[$indexName]['mappings'][$mappingName])) {
+          return $mapping[$indexName]['mappings'][$mappingName];
+        }
+      }
+      else {
+        if (isset($mapping[$indexName]['mappings'])) {
+          return $mapping[$indexName]['mappings'];
+        }
+      }
+      return null;
     } catch (\Exception $ex) {
       return null;
     }
@@ -270,25 +294,18 @@ class IndexManager
       $indexSettings['number_of_replicas'] = $numberOfReplicas;
       $this->createIndex(static::APP_INDEX_NAME, $indexSettings);
     }
-    $mapping = $this->getMapping(static::APP_INDEX_NAME, 'store_item');
+    $mapping = $this->getMapping(static::APP_INDEX_NAME, $this->isLegacy ? 'store_item' : null);
     if($mapping == null) {
       $json = json_decode(file_get_contents(__DIR__ . '/../Resources/store_structure.json'), TRUE);
-      $this->putMapping(static::APP_INDEX_NAME, 'store_item', $json['mapping']);
+      $this->putMapping(static::APP_INDEX_NAME, $this->isLegacy ? 'store_item' : null, $json['mapping']);
     }
   }
 
   public function search($indexName, $query, $from = 0, $size = 20, $type = null) {
     $this->sanitizeGlobalAgg($query);
-    $params = array(
-      'index' => $indexName,
-      'body' =>$query
-    );
-    if($type != null) {
-      $params['type'] = $type;
-    }
-    $params['body']['from'] = $from;
-    $params['body']['size'] = $size;
-    return $this->client->search($params);
+    $query['from'] = $from;
+    $query['size'] = $size;
+    return $this->getServerClient()->search($indexName, $query, $type != null && $this->isLegacy() ? $type : null);
   }
 
   private function sanitizeGlobalAgg(&$array)
@@ -312,7 +329,6 @@ class IndexManager
     }
     $params = array(
       'index' => static::APP_INDEX_NAME,
-      'type' => 'store_item',
       'body' => array(
         'name' => $o->getName(),
         'type' => $o->getType(),
@@ -322,6 +338,9 @@ class IndexManager
         'updated' => $updated->format('Y-m-d\TH:i:s')
       )
     );
+    if($this->isLegacy) {
+      $params['type'] = 'store_item';
+    }
     if($o->getId() != null) {
       $params['id'] = $o->getId();
       if($o->getCreated() == null) {
@@ -332,21 +351,19 @@ class IndexManager
     else {
       $params['body']['created'] = $created->format('Y-m-d\TH:i:s');
     }
-    $r = $this->client->index($params);
+    $r = $this->getServerClient()->index($params['index'], $params['body'], $o->getId(), $this->isLegacy ? 'store_item' : null);
     if(isset($r['_id'])){
       $o->setId($r['_id']);
     }
-    $this->client->indices()->flush();
+    $this->getServerClient()->flush();
+    $this->getServerClient()->refresh();
     return $o;
   }
 
   public function deleteObject($id) {
-    $this->client->delete(array(
-      'index' => static::APP_INDEX_NAME,
-      'type' => 'store_item',
-      'id' => $id
-    ));
-    $this->client->indices()->flush();
+    $this->getServerClient()->delete(static::APP_INDEX_NAME, $id, $this->isLegacy() ? 'store_item' : null);
+    $this->getServerClient()->flush();
+    $this->getServerClient()->refresh();
   }
 
   /**
@@ -569,18 +586,14 @@ class IndexManager
     return $objects;
   }
 
-  public function deleteByQuery($indexName, $mappingName, $query)
+  public function deleteByQuery($indexName, $query, $mappingName = null)
   {
     if($this->getServerMajorVersionNumber() >= 5) {
-      $this->client->deleteByQuery(array(
-        'index' => $indexName,
-        'type' => $mappingName,
-        'body' => $query
-      ));
+      $this->getServerClient()->deleteByQuery($indexName, $query, $mappingName);
     }
     else{
       //Delete by query is not available on ES 2.x clusters so let's do it on our own
-      $this->scroll($query, $indexName, $mappingName, function($items){
+      $this->scroll($query, $indexName, $this->isLegacy() ? $mappingName : null, function($items){
         $this->bulkDelete($items);
       },500);
     }
@@ -588,24 +601,13 @@ class IndexManager
 
   public function scroll($queryBody, $index, $mapping, $callback, $size = 10, $context = null)
   {
-    $params = array(
-      'index' => $index,
-      'body' => $queryBody,
-      'scroll' => '10ms',
-      'size' => $size
-    );
-    if($mapping != null) {
-      $params['type'] = $mapping;
-    }
-    $r = $this->client->search($params);
+    $queryBody['size'] = $size;
+    $r = $this->getServerClient()->search($index, $queryBody, $this->isLegacy() ? $mapping : null, '10ms');
     if (isset($r['_scroll_id'])) {
       while (count($r['hits']['hits']) > 0) {
         $callback($r['hits']['hits'], $context);
         $scrollId = $r['_scroll_id'];
-        $r = $this->client->scroll(array(
-          'scroll_id' => $scrollId,
-          'scroll' => '1m'
-        ));
+        $r = $this->getServerClient()->scroll($scrollId, '1m');
       }
     }
   }
@@ -614,14 +616,15 @@ class IndexManager
   {
     $bulkString = '';
     foreach ($items as $item) {
-      $data = array('delete' => array('_index' => $item['_index'], '_type' => $item['_type'], '_id' => $item['_id']));
+      $def = ['_index' => $item['_index'], '_id' => $item['_id']];
+      if($this->isLegacy()) {
+        $def['_type'] = $item['_type'];
+      }
+      $data = array('delete' => $def);
       $bulkString .= json_encode($data) . "\n";
     }
     if (count($items) > 0) {
-      $params['index'] = $items[0]['_index'];
-      $params['type'] = $items[0]['_type'];
-      $params['body'] = $bulkString;
-      $this->client->bulk($params);
+      $this->getServerClient()->bulk($bulkString);
     }
   }
 
@@ -651,35 +654,26 @@ class IndexManager
       'keywords' => $autopromote->getKeywords(),
       'data' => serialize($autopromote)
     );
-    $params = array(
-      'index' => $this->getAutopromoteIndexName($autopromote->getIndex()),
-      'type' => 'autopromote',
-      'body' => $doc
-    );
-    if($autopromote->getId() != NULL) {
-      $params['id'] = $autopromote->getId();
-    }
-    $r = $this->client->index($params);
+    $r = $this->getServerClient()->index($this->getAutopromoteIndexName($autopromote->getIndex()), $doc, $autopromote->getId(), $this->isLegacy() ? 'autopromote' : null);
     if(isset($r['_id'])){
       $autopromote->setId($r['_id']);
     }
-    $this->client->indices()->flush();
+    $this->getServerClient()->flush();
+    $this->getServerClient()->refresh();
   }
 
   public function listAutopromotes(SecurityContext $securityContext = null) {
-    $params = array(
+    $query = [
+      'query' => array(
+        'match_all' => array(
+          'boost' => 1
+        )
+      ),
       'from' => 0,
       'size' => 10000,
-      'body' => array(
-        'query' => array(
-          'match_all' => array(
-            'boost' => 1
-          )
-        )
-      )
-    );
+    ];
     if($securityContext == null || $securityContext->isAdmin()) {
-      $params['index'] = '.ads_autopromote_*';
+      $indexName = '.ads_autopromote_*';
     }
     else {
       $indexRestrictions = $securityContext->getRestrictions()['indexes'];
@@ -694,10 +688,10 @@ class IndexManager
         }
         if(empty($restrictedIndexes))
           return [];
-        $params['index'] = implode(',', $restrictedIndexes);
+        $indexName = implode(',', $restrictedIndexes);
       }
     }
-    $r = $this->client->search($params);
+    $r = $this->getServerClient()->search($indexName, $query, $this->isLegacy() ? 'autopromote' : null);
     $autopromotes = [];
     foreach($r['hits']['hits'] as $hit) {
       $autopromote = unserialize($hit['_source']['data']);
@@ -708,19 +702,17 @@ class IndexManager
   }
 
   public function getAutopromote($id, $index) {
-    $params = array(
+    $query = [
+      'query' => array(
+        'ids' => array(
+          'values' => [$id]
+        )
+      ),
       'from' => 0,
       'size' => 1,
-      'body' => array(
-        'query' => array(
-          'ids' => array(
-            'values' => [$id]
-          )
-        )
-      )
-    );
-    $params['index'] = $this->getAutopromoteIndexName($index);
-    $r = $this->client->search($params);
+    ];
+    $indexName = $this->getAutopromoteIndexName($index);
+    $r = $this->getServerClient()->search($indexName, $query, $this->isLegacy() ? 'autopromote' : null);
     if(isset($r['hits']['hits'][0])) {
       $autopromote = unserialize($r['hits']['hits'][0]['_source']['data']);
       $autopromote->setId($r['hits']['hits'][0]['_id']);
@@ -730,12 +722,9 @@ class IndexManager
   }
 
   public function deleteAutopromote($id, $index) {
-    $this->client->delete(array(
-      'index' => $this->getAutopromoteIndexName($index),
-      'type' => 'autopromote',
-      'id' => $id
-    ));
-    $this->client->indices()->flush();
+    $this->getServerClient()->delete($this->getAutopromoteIndexName($index), $id, $this->isLegacy() ? 'autopromote' : null);
+    $this->getServerClient()->flush();
+    $this->getServerClient()->refresh();
   }
 
   public function bulkIndex($items)
@@ -751,15 +740,12 @@ class IndexManager
       $bulkString .= json_encode($item['body']) . "\n";
     }
     if (count($items) > 0) {
-      $params['index'] = $items[0]['indexName'];
-      $params['type'] = $items[0]['mappingName'];
-      $params['body'] = $bulkString;
 
       $tries = 0;
       $retry = true;
       while ($tries == 0 || $retry) {
         try {
-          $this->client->bulk($params);
+          $this->getServerClient()->bulk($bulkString);
           $retry = false;
         } catch (NoNodesAvailableException $ex) {
           print get_class($this) . ' >> NoNodesAvailableException has been caught (' . $ex->getMessage() . ')' . PHP_EOL;
@@ -785,25 +771,17 @@ class IndexManager
       $id = $document['_id'];
       unset($document['_id']);
     }
-    $params = array(
-      'index' => $indexName,
-      'type' => $mappingName,
-      'body' => $document,
-    );
-    if ($id != null) {
-      $params['id'] = $id;
-    }
     $tries = 0;
     $retry = true;
     while ($tries == 0 || $retry) {
       try {
-        $r = $this->client->index($params);
+        $r = $this->getServerClient()->index($indexName, $document, $id, $this->isLegacy() ? $mappingName : null);
         if ($flush) {
-          $this->client->indices()->flush();
+          $this->getServerClient()->flush();
         }
         $retry = false;
-      } catch (NoNodesAvailableException $ex) {
-        print get_class($this) . ' >> NoNodesAvailableException has been caught (' . $ex->getMessage() . ')' . PHP_EOL;
+      } catch (ServerClientException $ex) {
+        print get_class($this) . ' >> ServerClientException has been caught (' . $ex->getMessage() . ')' . PHP_EOL;
         if ($tries > 20) {
           $retry = false;
           print get_class($this) . ' >> This is over, I choose to die.' . PHP_EOL;
@@ -816,51 +794,14 @@ class IndexManager
         $tries++;
       }
     }
-    unset($params);
     return isset($r) ? $r : null;
   }
 
   public function flush() {
-    $this->client->indices()->flush();
-  }
-
-  /**
-   * Get Elastic information
-   *
-   * @param SecurityContext $securityContext
-   * @param bool $checkACL
-   * @return array
-   */
-  public function getElasticInfo(SecurityContext $securityContext, $checkACL = true)
-  {
-    $info = array();
-    $stats = $this->getClient()->indices()->stats();
-    $allowed_indexes = ($checkACL) ? $securityContext->getRestrictions()['indexes'] : [];
-    foreach ($stats['indices'] as $index_name => $stat) {
-      if (!$checkACL || $securityContext->isAdmin() || in_array($index_name, $allowed_indexes)) {
-        $info[$index_name] = array(
-          'count' => $stat['total']['docs']['count'] - $stat['total']['docs']['deleted'],
-          'size' => round($stat['total']['store']['size_in_bytes'] / 1024 / 1024, 2) . ' MB',
-        );
-        $mappings = $this->getClient()->indices()->getMapping(array('index' => $index_name));
-        foreach ($mappings[$index_name]['mappings'] as $mapping => $properties) {
-          $info[$index_name]['mappings'][] = array(
-            'name' => $mapping,
-            'field_count' => count($properties['properties']),
-          );
-        }
-        unset($mappings);
-      }
-    }
-    unset($stats);
-    return $info;
+    $this->getServerClient()->flush();
   }
 
   public function analyze($index, $analyzer, $text) {
-    return $this->getClient()->indices()->analyze([
-      'index' => $index,
-      'analyzer' => $analyzer,
-      'text' => $text,
-    ]);
+    return $this->getServerClient()->analyze($index, $analyzer, $text);
   }
 }

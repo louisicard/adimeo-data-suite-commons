@@ -143,8 +143,10 @@ class Processor extends PersistentObject
       'index_name=' . $indexName
     );
 
-    foreach($this->getTargetSiblings() as $sibling) {
-      $tags[] = 'datasource_id=' . $sibling;
+    if($this->getTargetSiblings() !== null) {
+      foreach ($this->getTargetSiblings() as $sibling) {
+        $tags[] = 'datasource_id=' . $sibling;
+      }
     }
 
     return $tags;

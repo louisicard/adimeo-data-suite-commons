@@ -10,7 +10,6 @@
         },
         "transliterator": {
           "filter": [
-            "standard",
             "asciifolding",
             "lowercase"
           ],
