@@ -50,6 +50,7 @@ class ServerClient
     }
     catch(\Exception $ex) {
       /** @var ClientException $ex */
+      //var_dump((string)$ex->getResponse()->getBody());
       throw new ServerClientException($ex->getMessage());
     }
     if($res->getStatusCode() >= 200 && $res->getStatusCode() < 300) {
@@ -179,6 +180,46 @@ class ServerClient
       'analyzer' => $analyzer,
       'text' => $text
     ]);
+  }
+
+  public function getRepository($name = '_all') {
+    return $this->request('GET', '/_snapshot/' . $name);
+  }
+
+  public function createRepository($name, $type, $location, $compressed) {
+    $params = [
+      'type' => $type,
+      'settings' => [
+        'location' => $location,
+        'compress' => $compressed
+      ]
+    ];
+    return $this->request('PUT', '/_snapshot/' . $name, [], $params);
+  }
+
+  public function deleteRepository($name) {
+    return $this->request('DELETE', '/_snapshot/' . $name);
+  }
+
+  public function getSnapshots($repositoryName, $snapshot = '_all') {
+    return $this->request('GET', '/_snapshot/' . $repositoryName . '/' . $snapshot);
+  }
+
+  public function createSnapshot($repositoryName, $name, $indices, $ignoreUnavailable, $includeGlobalState) {
+    $params = [
+      'indices' => $indices,
+      'ignore_unavailable' => $ignoreUnavailable,
+      'include_global_state' => $includeGlobalState
+    ];
+    return $this->request('PUT', '/_snapshot/' . $repositoryName . '/' . $name, [], $params);
+  }
+
+  public function deleteSnapshot($repositoryName, $name) {
+    return $this->request('DELETE', '/_snapshot/' . $repositoryName . '/' . $name);
+  }
+
+  public function restoreSnapshot($repositoryName, $name, $settings) {
+    return $this->request('POST', '/_snapshot/' . $repositoryName . '/' . $name . '/_restore', [], $settings);
   }
 
 }

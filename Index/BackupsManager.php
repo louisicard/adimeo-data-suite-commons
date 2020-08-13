@@ -2,16 +2,14 @@
 
 namespace AdimeoDataSuite\Index;
 
-use Elasticsearch\Client;
-use Elasticsearch\ClientBuilder;
-
 
 class BackupsManager
 {
+
   /**
-   * @var Client
+   * @var ServerClient
    */
-  private $client;
+  private $serverClient;
 
   /**
    * BackupManager constructor.
@@ -20,20 +18,14 @@ class BackupsManager
    */
   public function __construct($elasticsearchServerUrl)
   {
-    $clientBuilder = new ClientBuilder();
-    if (!defined('JSON_PRESERVE_ZERO_FRACTION')) {
-      $clientBuilder->allowBadJSONSerialization();
-    }
-    $clientBuilder->setHosts(array($elasticsearchServerUrl));
-    $this->client = $clientBuilder->build();
+    $this->serverClient = new ServerClient($elasticsearchServerUrl);
   }
 
   /**
-   * @return Client
+   * @return ServerClient
    */
-  public function getClient()
-  {
-    return $this->client;
+  public function getServerClient() {
+    return $this->serverClient;
   }
 
   /**
@@ -43,7 +35,7 @@ class BackupsManager
    */
   public function getBackupsRepositories()
   {
-    return $this->getClient()->snapshot()->getRepository(array('repository' => '_all'));
+    return $this->getServerClient()->getRepository();
   }
 
   /**
@@ -54,7 +46,7 @@ class BackupsManager
    */
   public function getRepository($repositoryName)
   {
-    return $this->getClient()->snapshot()->getRepository(array('repository' => $repositoryName));
+    return $this->getServerClient()->getRepository($repositoryName);
   }
 
   /**
@@ -64,17 +56,7 @@ class BackupsManager
    */
   public function createRepository($data)
   {
-    $params = array(
-      'repository' => preg_replace("/[^A-Za-z0-9]/", '_', strtolower($data['name'])),
-      'body' => array(
-        'type' => $data['type'],
-        'settings' => array(
-          'location' => $data['location'],
-          'compress' => $data['compress'],
-        )
-      )
-    );
-    $this->getClient()->snapshot()->createRepository($params);
+    $this->getServerClient()->createRepository(preg_replace("/[^A-Za-z0-9]/", '_', strtolower($data['name'])), $data['type'], $data['location'], $data['compress']);
   }
 
   /**
@@ -85,7 +67,7 @@ class BackupsManager
    */
   public function deleteRepository($name)
   {
-    return $this->getClient()->snapshot()->deleteRepository(array('repository' => $name));
+    return $this->getServerClient()->deleteRepository($name);
   }
 
   /**
@@ -96,7 +78,7 @@ class BackupsManager
    */
   public function getSnapshots($repoName)
   {
-    return $this->getClient()->snapshot()->get(array('repository' => $repoName, 'snapshot' => '_all'));
+    return $this->getServerClient()->getSnapshots($repoName);
   }
 
   /**
@@ -108,10 +90,7 @@ class BackupsManager
    */
   public function getSnapshot($repositoryName, $snapshotName)
   {
-    $repository = $this->getClient()->snapshot()->get(array(
-      'repository' => $repositoryName,
-      'snapshot' => $snapshotName
-    ));
+    $repository = $this->getServerClient()->getSnapshots($repositoryName, $snapshotName);
 
     return (isset($repository['snapshots'][0])) ? $repository['snapshots'][0] : null;
   }
@@ -127,15 +106,7 @@ class BackupsManager
    */
   public function createSnapshot($repositoryName, $snapshotName, $indexes, $ignoreUnavailable = true, $includeGlobalState = false)
   {
-    $this->getClient()->snapshot()->create(array(
-      'repository' => $repositoryName,
-      'snapshot' => preg_replace("/[^A-Za-z0-9]/", '_', strtolower($snapshotName)),
-      'body' => array(
-        'indices' => implode(',', $indexes),
-        'ignore_unavailable' => $ignoreUnavailable,
-        'include_global_state' => $includeGlobalState,
-      )
-    ));
+    $this->getServerClient()->createSnapshot($repositoryName, preg_replace("/[^A-Za-z0-9]/", '_', strtolower($snapshotName)), implode(',', $indexes), $ignoreUnavailable, $includeGlobalState);
   }
 
   /**
@@ -147,10 +118,7 @@ class BackupsManager
    */
   public function deleteSnapshot($repositoryName, $snapshotName)
   {
-    return $this->getClient()->snapshot()->delete(array(
-      'repository' => $repositoryName,
-      'snapshot' => $snapshotName
-    ));
+    return $this->getServerClient()->deleteSnapshot($repositoryName, $snapshotName);
   }
 
   /**
@@ -178,10 +146,6 @@ class BackupsManager
     if (isset($params['renameReplacement']) && !empty($params['renameReplacement']) && $params['renameReplacement'] != null) {
       $body['rename_replacement'] = $params['renameReplacement'];
     }
-    $this->getClient()->snapshot()->restore(array(
-      'repository' => $repositoryName,
-      'snapshot' => $snapshotName,
-      'body' => $body
-    ));
+    $this->getServerClient()->restoreSnapshot($repositoryName, $snapshotName, $body);
   }
 }
