@@ -2,69 +2,68 @@
 
 namespace AdimeoDataSuite\Index;
 
-use Elasticsearch\Client;
-use Elasticsearch\ClientBuilder;
-use Elasticsearch\Common\Exceptions\Missing404Exception;
+use AdimeoDataSuite\Exception\ServerClientException;
 
 class RecoIndexManager
 {
 
   const RECO_INDEX_NAME = '.adimeo_data_suite_reco';
 
-  /**
-   * @var Client
-   */
-  private $client;
-
   private $indexNumberOfShards;
 
   private $indexNumberOfReplicas;
 
-  public function __construct($elasticsearchServerUrl, $numberOfShards = 1, $numberOfReplicas = 1) {
-    $clientBuilder = new ClientBuilder();
-    if(!defined('JSON_PRESERVE_ZERO_FRACTION')){
-      $clientBuilder->allowBadJSONSerialization();
-    }
-    $clientBuilder->setHosts(array($elasticsearchServerUrl));
-    $this->client = $clientBuilder->build();
+  /**
+   * @var ServerClient
+   */
+  private $serverClient;
+
+  /**
+   * @var bool
+   */
+  private $isLegacy;
+
+  public function __construct($elasticsearchServerUrl, $numberOfShards = 1, $numberOfReplicas = 1, $isLegacy = false) {
 
     $this->indexNumberOfShards = $numberOfShards;
     $this->indexNumberOfReplicas = $numberOfReplicas;
+    $this->isLegacy = $isLegacy;
+    $this->serverClient = new ServerClient($elasticsearchServerUrl);
   }
 
   /**
-   * @return Client
+   * @return ServerClient
    */
-  public function getClient() {
-    return $this->client;
+  public function getServerClient() {
+    return $this->serverClient;
+  }
+
+  public function isLegacy() {
+    return $this->isLegacy;
   }
 
   public function getRecoPath($path_id, $host)
   {
     try {
       $query = array(
-        'index' => static::RECO_INDEX_NAME,
-        'type' => 'path',
-        'body' => array(
-          'query' => array(
-            'bool' => array(
-              'must' => array(
-                array(
-                  'ids' => array(
-                    'values' => array($path_id),
-                  )
-                ),
-                array(
-                  'term' => array(
-                    'host' => $host
-                  )
+        'query' => array(
+          'bool' => array(
+            'must' => array(
+              array(
+                'ids' => array(
+                  'values' => array($path_id),
+                )
+              ),
+              array(
+                'term' => array(
+                  'host' => $host
                 )
               )
             )
           )
         )
       );
-      $r = $this->getClient()->search($query);
+      $r = $this->getServerClient()->search(static::RECO_INDEX_NAME, $query, $this->isLegacy() ? 'path' : null);
       if (isset($r['hits']['hits']) && count($r['hits']['hits']) > 0) {
         return array(
             'id' => $r['hits']['hits'][0]['_id']
@@ -82,37 +81,33 @@ class RecoIndexManager
   {
     try {
       $query = array(
-        'index' => static::RECO_INDEX_NAME,
-        'type' => 'path',
-        'body' => array(
-          'size' => 0,
-          'query' => array(
-            'bool' => array(
-              'must' => array(
-                array(
-                  'term' => array(
-                    'ids' => $id,
-                  )
-                ),
-                array(
-                  'term' => array(
-                    'host' => $host
-                  )
+        'size' => 0,
+        'query' => array(
+          'bool' => array(
+            'must' => array(
+              array(
+                'term' => array(
+                  'ids' => $id,
+                )
+              ),
+              array(
+                'term' => array(
+                  'host' => $host
                 )
               )
             )
-          ),
-          'aggs' => array(
-            'ids' => array(
-              "terms" => array(
-                "field" => "ids",
-                "size" => 20,
-              )
+          )
+        ),
+        'aggs' => array(
+          'ids' => array(
+            "terms" => array(
+              "field" => "ids",
+              "size" => 20,
             )
           )
         )
       );
-      $r = $this->getClient()->search($query);
+      $r = $this->getServerClient()->search(static::RECO_INDEX_NAME, $query, $this->isLegacy() ? 'path' : null);
       if (isset($r['aggregations']['ids']['buckets'])) {
         $ids = array();
         foreach ($r['aggregations']['ids']['buckets'] as $bucket) {
@@ -121,18 +116,15 @@ class RecoIndexManager
           }
         }
         if (count($ids) > 0) {
-          $r = $this->getClient()->search(array(
-            'index' => $index,
-            'type' => $mapping,
-            'body' => array(
-              'size' => 20,
-              'query' => array(
-                'ids' => array(
-                  'values' => array_keys($ids)
-                )
+          $subQuery = array(
+            'size' => 20,
+            'query' => array(
+              'ids' => array(
+                'values' => array_keys($ids)
               )
             )
-          ));
+          );
+          $r = $this->getServerClient()->search($index, $subQuery, $this->isLegacy() ? $mapping : null);
           if (isset($r['hits']['hits'])) {
             foreach ($r['hits']['hits'] as $hit) {
               if (isset($ids[$hit['_id']])) {
@@ -159,55 +151,34 @@ class RecoIndexManager
   public function saveRecoPath($path)
   {
     try {
-      $this->getClient()->search(array(
-        'index' => static::RECO_INDEX_NAME,
-        'type' => 'path',
-        'body' => array(
-          'query' => array(
-            'match_all' => array(
-              'boost' => 1
-            )
+      $query = array(
+        'query' => array(
+          'match_all' => array(
+            'boost' => 1
           )
         )
-      ));
+      );
+      $this->getServerClient()->search(static::RECO_INDEX_NAME, $query, $this->isLegacy() ? 'path' : null);
     }
-    catch(Missing404Exception $ex) {
-      //reco index does not exist
-      $this->getClient()->indices()->create(array(
-        'index' => static::RECO_INDEX_NAME,
-        'body' => [
-          'settings' => [
-            'number_of_shards' => $this->indexNumberOfShards,
-            'number_of_replicas' => $this->indexNumberOfReplicas,
-          ]
-        ]
-      ));
-      $json = json_decode(file_get_contents(__DIR__ . '/../Resources/reco_structure.json'), TRUE);
-      $this->putMapping(static::RECO_INDEX_NAME, 'path', $json);
+    catch(ServerClientException $ex) {
+      if($ex->getStatusCode() == 404) {
+        //reco index does not exist
+        $settings = [
+          'number_of_shards' => $this->indexNumberOfShards,
+          'number_of_replicas' => $this->indexNumberOfReplicas,
+        ];
+        $this->getServerClient()->createIndex(static::RECO_INDEX_NAME, $settings);
+        $json = json_decode(file_get_contents(__DIR__ . '/../Resources/reco_structure.json'), TRUE);
+        $this->getServerClient()->putMapping(static::RECO_INDEX_NAME, $this->isLegacy() ? 'path' : null, ['properties' => $json]);
+      }
     }
-    $params = array(
-      'index' => IndexManager::APP_RECO_INDEX_NAME,
-      'type' => 'path',
-      'id' => $path['id'],
-      'body' => array(
-        'host' => $path['host'],
-        'ids' => $path['ids'],
-      )
+    $document = array(
+      'host' => $path['host'],
+      'ids' => $path['ids'],
     );
-    $r = $this->getClient()->index($params);
-    $this->getClient()->indices()->flush();
-    unset($params);
+    $r = $this->getServerClient()->index(static::RECO_INDEX_NAME, $document, $path['id'], $this->isLegacy() ? 'path' : null);
+    $this->getServerClient()->flush();
+    unset($document);
     return $r;
-  }
-
-  private function putMapping($indexName, $mappingName, $mapping) {
-    $body = array(
-      'properties' => $mapping
-    );
-    $this->client->indices()->putMapping(array(
-      'index' => $indexName,
-      'type' => $mappingName,
-      'body' => $body
-    ));
   }
 }
