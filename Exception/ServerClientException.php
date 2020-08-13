@@ -14,9 +14,16 @@ class ServerClientException extends \Exception
 
   protected $message;
 
-  public function __construct($message)
+  private $statusCode;
+
+  public function __construct($message, $code = null)
   {
     $this->message = $message;
+    $this->statusCode = $code;
+  }
+
+  public function getStatusCode() {
+    return $this->statusCode;
   }
 
 }
