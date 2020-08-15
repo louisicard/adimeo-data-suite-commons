@@ -6,21 +6,12 @@ use AdimeoDataSuite\Exception\ServerClientException;
 use AdimeoDataSuite\Model\Autopromote;
 use AdimeoDataSuite\Model\PersistentObject;
 use AdimeoDataSuite\Model\SecurityContext;
-use Elasticsearch\Client;
-use Elasticsearch\ClientBuilder;
-use Elasticsearch\Common\Exceptions\Missing404Exception;
-use Elasticsearch\Common\Exceptions\NoNodesAvailableException;
 
 class IndexManager
 {
 
   const APP_INDEX_NAME = '.adimeo_data_suite';
   const APP_RECO_INDEX_NAME = '.adimeo_data_suite_reco';
-
-  /**
-   * @var Client
-   */
-  private $client;
 
   /**
    * @var ServerClient
@@ -33,12 +24,6 @@ class IndexManager
   private $isLegacy = false;
 
   public function __construct($elasticsearchServerUrl, $isLegacy = false) {
-    $clientBuilder = new ClientBuilder();
-    if(!defined('JSON_PRESERVE_ZERO_FRACTION')){
-      $clientBuilder->allowBadJSONSerialization();
-    }
-    $clientBuilder->setHosts(array($elasticsearchServerUrl));
-    $this->client = $clientBuilder->build();
 
     $this->serverClient = new ServerClient($elasticsearchServerUrl);
 
@@ -49,13 +34,6 @@ class IndexManager
 
   public function isLegacy() {
     return $this->isLegacy;
-  }
-
-  /**
-   * @return Client
-   */
-  public function getClient() {
-    return $this->client;
   }
 
   public function getServerClient() {
