@@ -753,6 +753,9 @@ class IndexManager
       $id = $document['_id'];
       unset($document['_id']);
     }
+    if(empty($document)) {
+      return null;
+    }
     $tries = 0;
     $retry = true;
     while ($tries == 0 || $retry) {
