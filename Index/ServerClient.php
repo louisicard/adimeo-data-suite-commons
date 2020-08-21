@@ -51,7 +51,7 @@ class ServerClient
     catch(\Exception $ex) {
       /** @var ClientException $ex */
       //var_dump((string)$ex->getResponse()->getBody());
-      throw new ServerClientException($ex->getMessage());
+      throw new ServerClientException($ex->getMessage(), $ex->getResponse()->getStatusCode());
     }
     if($res->getStatusCode() >= 200 && $res->getStatusCode() < 300) {
       $json = (string)$res->getBody();
@@ -60,10 +60,10 @@ class ServerClient
         return $data;
       }
       else {
-        throw new ServerClientException('No valid data returned from server');
+        throw new ServerClientException('No valid data returned from server', $res->getStatusCode());
       }
     }
-    throw new ServerClientException('Server responded with status code ' . $res->getStatusCode());
+    throw new ServerClientException('Server responded with status code ' . $res->getStatusCode(), $res->getStatusCode());
   }
 
   public function info() {
