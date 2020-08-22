@@ -60,7 +60,7 @@ class ServerClient
     }
     catch(\Exception $ex) {
       /** @var ClientException $ex */
-      var_dump((string)$ex->getResponse()->getBody());
+      //var_dump((string)$ex->getResponse()->getBody());
       throw new ServerClientException($ex->getMessage(), $ex->getResponse()->getStatusCode());
     }
     if($res->getStatusCode() >= 200 && $res->getStatusCode() < 300) {
