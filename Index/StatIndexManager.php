@@ -28,7 +28,7 @@ class StatIndexManager
     $this->indexNumberOfShards = $numberOfShards;
     $this->indexNumberOfReplicas = $numberOfReplicas;
 
-    $this->serverClient = new ServerClient($elasticsearchServerUrl);
+    $this->serverClient = new ServerClient($elasticsearchServerUrl, $isLegacy);
     $this->isLegacy = $isLegacy;
   }
 

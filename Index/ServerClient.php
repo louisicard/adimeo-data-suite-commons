@@ -20,12 +20,22 @@ class ServerClient
    */
   private $client;
 
-  public function __construct($serverUrl)
+  /**
+   * @var bool
+   */
+  private $isLegacy;
+
+  public function __construct($serverUrl, $isLegacy)
   {
 
     $this->serverUrl = $serverUrl;
     $this->client = new Client();
+    $this->isLegacy = $isLegacy;
 
+  }
+
+  public function isLegacy() {
+    return $this->isLegacy;
   }
 
   private function request($method, $uri, $params = [], $body = null, $bodyAsString = false) {
@@ -50,7 +60,7 @@ class ServerClient
     }
     catch(\Exception $ex) {
       /** @var ClientException $ex */
-      //var_dump((string)$ex->getResponse()->getBody());
+      var_dump((string)$ex->getResponse()->getBody());
       throw new ServerClientException($ex->getMessage(), $ex->getResponse()->getStatusCode());
     }
     if($res->getStatusCode() >= 200 && $res->getStatusCode() < 300) {
@@ -145,7 +155,12 @@ class ServerClient
   }
 
   public function search($indexName, $queryBody, $mappingName = null, $scroll = null) {
-    $params = ['rest_total_hits_as_int' => 'true'];
+    if($this->isLegacy()) {
+      $params = [];
+    }
+    else {
+      $params = ['rest_total_hits_as_int' => 'true'];
+    }
     if($scroll != null) {
       $params['scroll'] = $scroll;
     }

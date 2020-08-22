@@ -28,7 +28,7 @@ class RecoIndexManager
     $this->indexNumberOfShards = $numberOfShards;
     $this->indexNumberOfReplicas = $numberOfReplicas;
     $this->isLegacy = $isLegacy;
-    $this->serverClient = new ServerClient($elasticsearchServerUrl);
+    $this->serverClient = new ServerClient($elasticsearchServerUrl, $isLegacy);
   }
 
   /**

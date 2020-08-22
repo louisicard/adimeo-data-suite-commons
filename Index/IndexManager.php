@@ -25,7 +25,7 @@ class IndexManager
 
   public function __construct($elasticsearchServerUrl, $isLegacy = false) {
 
-    $this->serverClient = new ServerClient($elasticsearchServerUrl);
+    $this->serverClient = new ServerClient($elasticsearchServerUrl, $isLegacy);
 
     if($isLegacy === '1' or $isLegacy === 1) {
       $this->isLegacy = true;
