@@ -16,9 +16,9 @@ class BackupsManager
    *
    * @param $elasticsearchServerUrl
    */
-  public function __construct($elasticsearchServerUrl, $isLegcay)
+  public function __construct($elasticsearchServerUrl, $isLegacy)
   {
-    $this->serverClient = new ServerClient($elasticsearchServerUrl, $isLegcay);
+    $this->serverClient = new ServerClient($elasticsearchServerUrl, $isLegacy === '1' || $isLegacy === 1);
   }
 
   /**
