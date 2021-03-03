@@ -23,13 +23,20 @@ class IndexManager
    */
   private $isLegacy = false;
 
-  public function __construct($elasticsearchServerUrl, $isLegacy = false) {
+  /**
+   * @var int
+   */
+  private $maxReplicas = 0;
+
+  public function __construct($elasticsearchServerUrl, $isLegacy = false, $maxReplicas = 0) {
 
     $this->serverClient = new ServerClient($elasticsearchServerUrl, $isLegacy === '1' || $isLegacy === 1);
 
     if($isLegacy === '1' || $isLegacy === 1) {
       $this->isLegacy = true;
     }
+
+    $this->maxReplicas = $maxReplicas;
   }
 
   public function isLegacy() {
@@ -141,7 +148,7 @@ class IndexManager
         }
       }
     }
-    return $this->getServerClient()->createIndex($indexName, $settings);
+    return $this->getServerClient()->createIndex($indexName, $settings, $this->maxReplicas);
   }
 
   function updateIndex($indexName, $settings)

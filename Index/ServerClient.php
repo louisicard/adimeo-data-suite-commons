@@ -104,7 +104,10 @@ class ServerClient
     return $this->request('GET', '/' . $indexName . '/_settings');
   }
 
-  public function createIndex($indexName, $settings = []) {
+  public function createIndex($indexName, $settings = [], $maxReplicas = 0) {
+    if(!isset($settings['number_of_replicas']) || $settings['number_of_replicas'] > $maxReplicas) {
+      $settings['number_of_replicas'] = $maxReplicas;
+    }
     return $this->request('PUT', '/' . $indexName, [], ['settings' => $settings]);
   }
 

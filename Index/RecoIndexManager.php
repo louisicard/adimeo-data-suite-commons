@@ -23,12 +23,18 @@ class RecoIndexManager
    */
   private $isLegacy;
 
-  public function __construct($elasticsearchServerUrl, $numberOfShards = 1, $numberOfReplicas = 1, $isLegacy = false) {
+  /**
+   * @var int
+   */
+  private $maxReplicas = 0;
+
+  public function __construct($elasticsearchServerUrl, $numberOfShards = 1, $numberOfReplicas = 1, $isLegacy = false, $maxReplicas = 0) {
 
     $this->indexNumberOfShards = $numberOfShards;
     $this->indexNumberOfReplicas = $numberOfReplicas;
     $this->isLegacy = $isLegacy === '1' || $isLegacy === 1;
     $this->serverClient = new ServerClient($elasticsearchServerUrl, $isLegacy);
+    $this->maxReplicas = $maxReplicas;
   }
 
   /**
