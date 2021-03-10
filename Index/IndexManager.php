@@ -574,7 +574,7 @@ class IndexManager
   public function deleteByQuery($indexName, $query, $mappingName = null)
   {
     if($this->getServerMajorVersionNumber() >= 5) {
-      $this->getServerClient()->deleteByQuery($indexName, $query, $mappingName);
+      $this->getServerClient()->deleteByQuery($indexName, $query, $this->isLegacy() ? $mappingName : null);
     }
     else{
       //Delete by query is not available on ES 2.x clusters so let's do it on our own
