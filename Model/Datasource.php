@@ -209,7 +209,12 @@ abstract class Datasource extends PersistentObject
           foreach($smartMappersToDump as $smartMapper){
             foreach($smartMapper as $k => $v){
               if(!is_array($v)) {
-                $to_index[$k] = trim($this->cleanNonUtf8Chars($v));
+                if(is_numeric($v)) {
+                  $to_index[$k] = $v;
+                }
+                else {
+                  $to_index[$k] = trim($this->cleanNonUtf8Chars($v));
+                }
               }
               else{
                 foreach($v as $vv){
