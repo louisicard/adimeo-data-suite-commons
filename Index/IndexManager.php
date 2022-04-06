@@ -145,6 +145,7 @@ class IndexManager
               unset($settings['analysis']['analyzer'][$analyzer]['filter'][$index]);
             }
           }
+          $settings['analysis']['analyzer'][$analyzer]['filter'] = array_values($settings['analysis']['analyzer'][$analyzer]['filter']);
         }
       }
     }
