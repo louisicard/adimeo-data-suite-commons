@@ -133,7 +133,8 @@ class IndexManager
       unset($settings['uuid']);
     if (isset($settings['provided_name']))
       unset($settings['provided_name']);
-    $settings['analysis']['analyzer'] = [];
+    if(!isset($settings['analysis']['analyzer']))
+      $settings['analysis']['analyzer'] = [];
     $settings['analysis']['normalizer']['transliterator'] = array(
       'filter' => array('asciifolding', 'lowercase')
     );
