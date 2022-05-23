@@ -25,13 +25,36 @@ class ServerClient
    */
   private $isLegacy;
 
-  public function __construct($serverUrl, $isLegacy)
+  /**
+   * @var bool
+   */
+  private $isSecurityEnabled;
+
+  /**
+   * @var string
+   */
+  private $caCertPath;
+
+  /**
+   * @var string
+   */
+  private $username;
+
+  /**
+   * @var string
+   */
+  private $password;
+
+  public function __construct($serverUrl, $isLegacy, $isSecurityEnabled, $caCertPath, $username, $password)
   {
 
     $this->serverUrl = $serverUrl;
     $this->client = new Client();
     $this->isLegacy = $isLegacy;
-
+    $this->isSecurityEnabled = $isSecurityEnabled;
+    $this->caCertPath = $caCertPath;
+    $this->username = $username;
+    $this->password = $password;
   }
 
   public function isLegacy() {
@@ -55,6 +78,10 @@ class ServerClient
       }
       else {
         $querystring = '';
+      }
+      if($this->isSecurityEnabled) {
+        $reqParams['verify'] = $this->caCertPath;
+        $reqParams['headers']['Authorization'] = 'Basic ' . base64_encode($this->username . ':' . $this->password);
       }
       $res = $this->client->request($method, $this->serverUrl . $uri . $querystring, $reqParams);
     }

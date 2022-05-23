@@ -28,12 +28,12 @@ class RecoIndexManager
    */
   private $maxReplicas = 0;
 
-  public function __construct($elasticsearchServerUrl, $numberOfShards = 1, $numberOfReplicas = 1, $isLegacy = false, $maxReplicas = 0) {
+  public function __construct($elasticsearchServerUrl, $numberOfShards = 1, $numberOfReplicas = 1, $isLegacy = false, $maxReplicas = 0, $isSecurityEnabled = 0, $caCertPath = NULL, $username = NULL, $password = NULL) {
 
     $this->indexNumberOfShards = $numberOfShards;
     $this->indexNumberOfReplicas = $numberOfReplicas;
     $this->isLegacy = $isLegacy === '1' || $isLegacy === 1;
-    $this->serverClient = new ServerClient($elasticsearchServerUrl, $isLegacy);
+    $this->serverClient = new ServerClient($elasticsearchServerUrl, $isLegacy, $isSecurityEnabled === '1' || $isSecurityEnabled === 1, $caCertPath, $username, $password);
     $this->maxReplicas = $maxReplicas;
   }
 

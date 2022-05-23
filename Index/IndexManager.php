@@ -28,9 +28,9 @@ class IndexManager
    */
   private $maxReplicas = 0;
 
-  public function __construct($elasticsearchServerUrl, $isLegacy = false, $maxReplicas = 0) {
+  public function __construct($elasticsearchServerUrl, $isLegacy = false, $maxReplicas = 0, $isSecurityEnabled = 0, $caCertPath = NULL, $username = NULL, $password = NULL) {
 
-    $this->serverClient = new ServerClient($elasticsearchServerUrl, $isLegacy === '1' || $isLegacy === 1);
+    $this->serverClient = new ServerClient($elasticsearchServerUrl, $isLegacy === '1' || $isLegacy === 1, $isSecurityEnabled === '1' || $isSecurityEnabled === 1, $caCertPath, $username, $password);
 
     if($isLegacy === '1' || $isLegacy === 1) {
       $this->isLegacy = true;
