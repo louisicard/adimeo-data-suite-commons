@@ -82,6 +82,8 @@ class IndexManager
     $info = array();
     $stats = $this->getServerClient()->clusterStats();
     foreach ($stats['indices'] as $index_name => $stat) {
+      if($index_name == '.geoip_databases')
+        continue;
       $info[$index_name] = array(
         'count' => $stat['total']['docs']['count'] - $stat['total']['docs']['deleted'],
         'size' => round($stat['total']['store']['size_in_bytes'] / 1024 / 1024, 2) . ' MB',
